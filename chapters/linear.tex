@@ -1,0 +1,750 @@
+\chapter{线性层}
+
+现代人工智能的本质，是\textbf{模拟生物神经元的连接方式，通过信息的传递来实现智能行为}，其基础是\textbf{机器学习}。而最能够反映这种“连接”的模型，就是“线性层”。
+
+\section{机器学习究竟做了个什么事情}
+
+机器学习大致是这样一个逻辑：
+\begin{definition}[机器学习]
+给定数据$\{(x_i, y_i)\}_{i=1}^n$，寻找一个函数$f$，使得$f(x_i) \approx y_i$；且对于新的输入$x_{new}$，$f(x_{new})$能给出合理的预测。
+\end{definition}
+
+从这个定义出发，我们人为的给机器学习划分了这些类别：
+\begin{description}
+    \item[监督学习] 给定的是$\{(x_i, y_i)\}_{i=1}^n$。
+    \item[半监督学习] 给定的是$\{(x_i, y_i)\}_{i=1}^m$和$\{x_j\}_{j=m+1}^{m+n}$。
+    \item[无监督学习] 给定的是$\{x_i\}_{i=1}^n$。
+    \item[自监督学习] 给定的是$\{x_i\}_{i=1}^n$，但我们希望通过某种方式从数据中生成标签，通常是通过数据本身的结构或特征来创建伪标签。
+\end{description} 
+
+\section{简单的分类问题}
+
+监督学习中的分类问题是最简单的机器学习问题之一。
+
+分类问题的核心自然是“分类”，即将数据划分为不同的类别，\textbf{这些类别之间是没有“顺序”意义的}。
+
+例如，朴素的MNIST-10分类问题：
+\begin{mdframed}[frametitle=MNIST-10分类问题]\itshape
+    给定一组手写数字图片。图片的尺寸都是$28\times 28$，每个像素点的灰度值在$[0, 255]$之间。我们希望训练一个模型，使其能够根据图片的像素值预测出图片中所表示的数字（0到9）。
+\end{mdframed}
+
+初看起来颇难以下手。
+
+我们再将上述问题简化一下，假设只有两类图片：数字0和数字1。我们希望训练一个模型，使其能够根据图片的像素值预测出图片中所表示的数字是0还是1。
+
+这个做法很多，比如非神经网络做法：通过传统计算机视觉方法，提取图片的特征，找到其根本区别。例如在这个题目中，我们发现0的中心是空的，可以将空间分成两份；而1不能将空间分成两份。我们可以通过计算图片的连通分量来区分0和1。
+
+当然，这个做法有着巨大的局限性和特殊性：常见的反例是4可能将空间分成两份，也可能不将空间分成两份（取决与4的右上角是否闭合）。我们迫切的需要一个不依赖于样本的普适做法。
+
+\subsection{基本做法：将数据看成向量}
+
+我们把这些图片看作是一些784维的向量（因为$28\times 28=784$），每个向量的每个分量对应一个像素点的灰度值。我们如果能够在高维度的空间画出一条合适的“线”（超平面），将这些点分开，那么这样就能将不同类别的图片区分开来。
+
+那么我们划线：$y = \mathbf{W}^\top \mathbf{x} + b$，其中$\mathbf{W}$是权重向量，$b$是偏置项。我们希望找到合适的$\mathbf{W}$和$b$，使得对于所有的训练样本$(\mathbf{x}_i, y_i)$，有：
+\[
+y_i = \begin{cases}
+1, & \text{if } f(\mathbf{x}_i) + b > 0 \\
+0, & \text{if } f(\mathbf{x}_i) + b \leq 0
+\end{cases}
+\]
+另外，我们希望函数$y = f(\mathbf{x})$还有更深层的性质：这个东西越像1，$y$就越大；反之越小。
+
+当然，在更加一般的前提下：这个超平面一定能把数据分开吗？答案显然是否定的。
+
+不过，在这个题目中，我们能说“0和1的图片长得确实不一样，且所有的0长得都差不多、所有的1长得也差不多”。那么，它们在高维空间中对应的点就应该“聚成两堆”，且“这两堆之间有很大的空隙”。此时，称之为“线性可分”。如果数据是线性可分的，那么我们就可以找到一个超平面将它们分开。线性可分是机器学习的一个基本假设，这种数据是最容易处理的。
+
+\subsection{定义模型的好坏：损失函数}
+
+对于人类而言，我们可以看着图找到将两堆点分开的“线”，但计算机不行。这是因为人类划线的过程是依赖于经验与“顿悟”的，计算机不具有“顿悟”学习能力，必须遵循一个不依赖于经验的算法找到这条线。
+
+那么问题就在于：怎样形式化的找到一条线？我们可以“摸着石头过河”，随机生成许多线，取其中最好的一条。
+
+那下一个问题就变成了：怎样评估这条线的好坏？
+
+既然如此，我们完全可以把这个线的好坏用一个“指数”来衡量。我们知道，“好”是无上限的，但“坏”是有下限的，所以我们比起定义“这条线有多好”，更倾向于定义“这条线有多坏”。这个指数就是所谓的损失函数。
+
+\begin{definition}[损失函数]
+    损失函数是一个有下界的函数，用来衡量模型的预测结果与真实标签的差距。当预测结果和真实情况完全一致时，损失函数的数值一般为0；预测结果和真实情况差得越大，损失函数的数值也应该越大。
+\end{definition}
+
+于是很容易得到一个初级的损失函数：
+\[ \mathcal{L} = \sum \mathbb{I}(f(\mathbf{x}_i)\neq y_i) \]
+其中$\mathbb{I}$是示性函数。
+
+\subsection{怎样让损失函数的数值最小？}
+
+有了损失函数，我们的下一个目标就是让损失函数的数值尽可能小。我们知道损失函数的下确界是0，所以理论上可以通过求解方程$\mathcal{L}=0$来找到一个完美的决策边界，但实际求解这个方程可能会非常困难，或者不存在解析解，甚至不存在解——数据可能有噪声、异常值。
+
+理论上也可以使用一个搜索算法来试图解决这个问题：在指定的决策空间中，利用爬山、模拟退火、遗传算法等寻找到这样的决策边界。但这些算法都是基于离散的数值来搜索的，难道要在$\mathbb{R}^{785}$里搜索吗？所以搜索也不行。
+
+数学告诉我们，如果一个函数光滑，我们就可以通过计算它的导数（梯度）来找到最小值。而上述损失函数显然不光滑，所以我们要寻找一个更光滑的东西，比如下面这个东西：
+\[ \mathcal{L} = \frac{1}{N} \sum_{i=0}^N (f(\mathbf{x}_i)- y_i)^2\]
+这个损失函数叫做“均方误差损失函数”或MSE，是光滑的。那么我们可以对这个东西求偏导数，然后让梯度等于零就可以找到这样的点：
+\[ \frac{\partial \mathcal{L}}{\partial \mathbf{W}} = 0, \quad 
+\frac{\partial \mathcal{L}}{\partial b} = 0 \]
+
+但这东西的问题和刚刚是一样的：偏导数等于零，这样的方程求解起来可能非常困难，或者不存在解析解。于是我们只能寄希望于数学家，看看他们有没有什么优化方法。
+
+于是我们惊喜地发现：牛顿已经解决了这个问题！
+\[ x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)} \]
+这是大名鼎鼎的牛顿法求任意光滑函数的根的迭代公式。我们可以把它用来求解损失函数的最小值。当然，我们这里求的是导数的根，所以我们可以把它改写为：
+\[ x_{n+1} = x_n - \frac{f'(x_n)}{f''(x_n)} \]
+把刚刚的损失函数带进去：
+\begin{equation}\label{eq:newton}
+    (\mathbf{W}_{n+1}, b_{n+1}) = (\mathbf{W}_n, b_n) - \frac{\nabla \mathcal{L}(\mathbf{W}_n, b_n)}{\nabla^2 \mathcal{L}(\mathbf{W}_n, b_n)}
+\end{equation}
+
+这就是牛顿优化法。
+
+但是在实际应用中面临的最大问题是：这个$\nabla \mathcal{L}$和$\nabla^2 \mathcal{L}$都是很大的矩阵，而后者这个Hessian矩阵需要求逆，这在计算是非常困难的：对矩阵求逆，其时间复杂度是$O(n^3)$，这是不可接受的。
+
+再次观察上式，发现Hessian矩阵的逆实际上仅用来调整梯度的步长。我们完全可以使用一个固定的步长来调整梯度，于是我们就得到了梯度下降法：
+\begin{equation}\label{eq:gd}
+    (\mathbf{W}_{n+1}, b_{n+1}) = (\mathbf{W}_n, b_n) - \eta \nabla \mathcal{L}(\mathbf{W}_n, b_n) 
+\end{equation}
+其中$\eta$是一个小的正数，称为学习率，控制了每次迭代的步长。容易理解：当$\eta$大时，收敛速度加快，但可能在最小值附近震荡；当$\eta$小时，收敛速度减慢也更稳定，但增加了收敛到局部最小值的风险。
+
+一般$\mathbf{W}$和$b$是可以相互独立学习的，因此我们可以把它们分开。不过方便起见，一般设置相同的学习率。
+
+\subsection{梯度下降为什么“基本上”是对的}
+
+观察 \cref{eq:gd} 和 \cref{eq:newton}，我们可以发现，梯度下降法实际上做了这件事：
+\[ \eta \sim (\nabla^2 \mathcal{L}(\mathbf{W}_n, b_n))^{-1} \]
+
+所以“梯度下降一定能下降”这句话的一个必要条件是：Hessian矩阵是正定的。也就是说，损失函数必须是凸函数。
+
+损失函数不是凸函数的情况太多了。但我们一直在用这个梯度下降，也没见得有什么问题。为什么呢？我们可以试着找一找梯度下降的一个充分条件。事实上，这个定理成立：
+\begin{theorem}\label{thm:gd_convergence}
+    若损失函数$f$是具有Lipschitz连续梯度的光滑函数，其梯度的Lipschitz常数是$L$，则在学习率$\eta$满足$0 < \eta < \frac{2}{L}$时，梯度下降法将收敛到一个局部最小值。
+\end{theorem}
+
+\begin{proof}
+Lipschitz条件的定义是：
+\[ \forall x_1, x_2 \in I,\quad \exists L > 0, \quad |f(x_1) - f(x_2)| \leq L |x_1 - x_2| \]
+我们考量梯度，将这个式子改写为：
+\begin{equation}
+\left\|\nabla f(\theta+\Delta \theta) - \nabla f(\theta)\right\| \leq L \|\Delta \theta\|
+\end{equation}
+这里取的范数是L2范数。
+
+先证明一个引理：
+\begin{lemma}
+    若$f$是具有Lipschitz连续梯度的光滑函数，其梯度的Lipschitz常数是$L$，则下列不等式成立：
+    \[
+    f(\theta+\Delta \theta)- f(\theta) \leq  \left\langle\nabla f(\theta), \Delta \theta \right\rangle + \frac{L}{2}\|\Delta \theta\|^2
+    \]
+    其中$\left\langle\cdot, \cdot\right\rangle$表示内积。
+\end{lemma}
+定义这样的辅助函数$g(t) = f(\theta + t\Delta \theta)$，则根据微积分基本定理$g(1) - g(0) = \int_0^1 g'(t) dt$，我们有：
+\[
+f(\theta+\Delta \theta) - f(\theta) = \int_0^1 \frac{\partial g}{\partial t} dt
+\]
+现在使用链式法则$g(t) = f(h(t))$，其中$h(t) = \theta + t\Delta \theta$，这是一个向量值函数。我们很容易得到$g'(t) = \nabla_\theta f(h(t)) \cdot h'(t) = \nabla_\theta f(\theta + t\Delta \theta) \cdot \Delta \theta$。后面这串实际上就是$\left\langle\nabla f(\theta), \Delta \theta \right\rangle$。
+
+另一方面，由于$\nabla f$是Lipschitz连续的，我们有：
+\[\|\nabla f(\theta + t\Delta \theta) - \nabla f(\theta)\| \leq L \|t\Delta \theta\| = Lt \|\Delta \theta\|\]
+
+把这两个新的信息带回去，得到：
+
+\begin{align}
+    f(\theta+\Delta \theta) - f(\theta) &= \int_0^1 \left\langle\nabla f(\theta + t\Delta \theta), \Delta \theta \right\rangle dt \\
+    &= \int_0^1 \left\langle\nabla f(\theta) + (\nabla f(\theta + t\Delta \theta) - \nabla f(\theta)), \Delta \theta \right\rangle dt \\
+    &= \int_0^1 \left\langle\nabla f(\theta), \Delta \theta \right\rangle dt + \int_0^1 \left\langle\nabla f(\theta + t\Delta \theta) - \nabla f(\theta), \Delta \theta \right\rangle dt \label{eq:bilinear} \\ 
+    &= \left\langle\nabla f(\theta), \Delta \theta \right\rangle + \int_0^1 \left\langle\nabla f(\theta + t\Delta \theta) - \nabla f(\theta), \Delta \theta \right\rangle dt \\ 
+    &\leq \left\langle\nabla f(\theta), \Delta \theta \right\rangle + \int_0^1 \|\nabla f(\theta + t\Delta \theta) - \nabla f(\theta)\| \cdot \|\Delta \theta\| dt \label{eq:cauchy-schwarz}\\ 
+    &\leq \left\langle\nabla f(\theta), \Delta \theta \right\rangle + \int_0^1 L t \|\Delta \theta\|^2 dt \\
+    &= \left\langle\nabla f(\theta), \Delta \theta \right\rangle + \frac{L}{2}\|\Delta \theta\|^2
+\end{align}
+
+\cref{eq:bilinear}这一步利用的是内积的双线性；\cref{eq:cauchy-schwarz}这一步利用的是Cauchy-Schwarz不等式。于是我们证明了这个引理。
+
+因为$f(\theta)$是损失函数，目标是最小化这个东西。既然是最小化，那么每一步都希望下降，即$f(\theta+\Delta \theta)- f(\theta) < 0$。利用放缩，希望$\left\langle\nabla f(\theta), \Delta \theta \right\rangle + \frac{L}{2}\|\Delta \theta\|^2 < 0$。但这是一个平方加上另一项，所以想要保证整体小于零，必须有$\left\langle\nabla f(\theta), \Delta \theta \right\rangle<0$，一个自然的选择是
+\[\Delta \theta = -\eta \nabla f(\theta)\]
+这不就是梯度下降吗？
+
+把梯度下降公式带入上式，即
+\[ \left(\frac{L}{2}\eta^2 - \eta\right)\|\nabla f(\theta)\|^2 < 0 \]
+解这个不等式发现$\eta$必须满足$0 < \eta < \frac{2}{L}$。于是我们证明了这个定理。
+
+\end{proof}
+
+上述的推导过程比我们上节基于牛顿优化法的推导要严格得多：我们上节课是“凭感觉知道海森矩阵的逆应当是正的”，所以直接把它丢掉，变成了一个常数；而这次我们是从李普希茨约束出发，严格地推导出了这个常数的上界。
+
+\cref{thm:gd_convergence}这个定理证明完成之后，我们的问题就变成：损失函数到底是不是具有Lipschitz连续梯度的光滑函数？实际上，这个假设通常都是不成立的；但在实际情况中，能真正训练成功的模型，大多都能保证损失函数的梯度整体上是很稳定的。\supercite{kexuefm-6992}
+
+\subsection{利用链式法则简化梯度计算流程}
+
+回看 \cref{eq:gd}，我们发现梯度下降法的核心是计算梯度$\nabla \mathcal{L}(\mathbf{W}_n, b_n)$。那么如何计算这个梯度呢？
+
+直接计算似有困难，但我们可以利用链式法则来计算梯度。链式法则告诉我们，如果一个函数是由多个函数复合而成的，那么它的导数可以通过这些函数的导数相乘来计算。这个定理在张量映射中同样成立，具体为什么成立参见相关数学教材，我这里仅提供一个简要的分析。
+
+我们可以把从张量到张量的映射看作是很多$\mathbb{R}\to \mathbb{R}$的函数“拼在一起”；这样的映射求梯度，得到的结果应当包含所有这样的函数的梯度，按一定的顺序组合在一起；而对于每一个函数，链式法则告诉我们它的梯度可以通过它的复合函数的梯度相乘来计算，所以整体也是用类似的手段计算的。
+
+另外，需要知道一点：$f(x)$的梯度的阶等于$f$和$x$的阶的和；但在机器学习中，我们经常令这个梯度和待更新参数的形状一致（因为一般情况下不会丢失数据信息）。
+
+\begin{mdframed}[frametitle=例子：手算一个机器学习]\itshape
+
+\hspace{2em}假设损失函数$\mathcal{L} = (\hat{y} - y)^2$，神经网络为单层二维线性分类器$f(\mathbf{x}) = \mathbf{W}^\top \mathbf{x} + b$叠加一个sigmoid输出层$\hat{y} = \sigma(f(\mathbf{x}))$，其中$\sigma(z) = 1/(1 + e^{-z})$。这里叠加一个sigmoid输出层的主要原因是：将输出数值保序地映射到0和1之间，使得输出数值可以被解释为概率。
+
+具体数值：$\mathbf{x}_\text{in} = [2, 3]^\top$，$y = 1$，$\mathbf{W} = [1, 2]^\top$，$b = 3$。学习率$\eta = 0.1$。
+
+希望算出$\mathbf{x}_\text{out}$、$\hat{y}$、$\mathcal{L}$、经过一次迭代后的$\mathbf{W}$和$b$的值。
+
+为此，先进行一次前向传播：
+\[f(\mathbf{x}_\text{in}) = \mathbf{W}^\top \mathbf{x}_\text{in} + b = [1, 2] \times [2, 3]^\top + 3 = 1 \cdot 2 + 2 \cdot 3 + 3 = 11\]
+\[\hat{y} = \sigma(f(\mathbf{x}_\text{in})) = \sigma(11) \approx 0.999983\]
+
+然后求导数：
+\[\frac{\partial \mathcal{L}}{\partial \hat{y}} = 2(\hat{y} - y) = 2(0.999983 - 1) = -0.000034\]
+\[\frac{\partial \hat{y}}{\partial f} = \sigma'(f) = \sigma(f)(1 - \sigma(f)) = 0.999983 \cdot (1 - 0.999983) = 0.000017\]
+\[\frac{\partial f}{\partial \mathbf{W}} = \mathbf{x}_\text{in} = [2, 3]^\top\]
+\[\frac{\partial f}{\partial b} = 1\]
+
+最后利用链式法则进行反向传播。
+\[\frac{\partial \mathcal{L}}{\partial \mathbf{W}} = \frac{\partial \mathcal{L}}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial f} \cdot \frac{\partial f}{\partial \mathbf{W}} = [-0.000001156, -0.000001734]^\top\]
+\[\frac{\partial \mathcal{L}}{\partial b} = \frac{\partial \mathcal{L}}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial f} \cdot \frac{\partial f}{\partial b} = -0.000034 \cdot 0.000017 \cdot 1 = -0.000000578\]
+\[\mathbf{W}_\text{new} = \mathbf{W} - \eta \cdot \frac{\partial \mathcal{L}}{\partial \mathbf{W}}  = [1.0000001156, 2.0000001734]^\top\]
+\[b_\text{new} = b - \eta \cdot \frac{\partial \mathcal{L}}{\partial b} = 3 - 0.1 \cdot (-0.000000578) = 3.0000000578\]                         
+\end{mdframed}
+
+
+\subsection{数据集、测试集、验证集}
+
+机器学习的燃料是数据。我们需要大量的数据来训练模型，以便模型能够学习到数据中的模式和规律。
+
+传统的机器学习中，会将数据分为三块：数据集、测试集、验证集。
+\begin{description}
+    \item[数据集] 用于训练模型的数据集合，通常占总数据的70\%-80\%。数据集用于模型的训练和参数更新。
+    \item[验证集] 用于在训练过程中评估模型性能的数据集合，通常占总数据的10\%-15\%。验证集用于调整模型超参数和结构，帮助我们判断模型的训练过程是否健康。
+    \item[测试集] 用于在训练完成后评估模型的最终性能的数据集合，通常占总数据的10\%-15\%。测试集用于评估模型的最终能力。
+\end{description}
+以高考为例：数据集就是我们平时自己练习做的卷子，验证集是学校统一组织的月考、期中考试等试卷，测试集是高考试卷。
+
+传统的机器学习认为，在训练模型的时候，我们不能把测试集和验证集混淆到数据集中训练，否则模型将会“见过”这些数据，对其进行拟合，导致验证模型的最终性能时出现偏差；另外，也不能没有测试集而完全使用验证集来测试模型的最终能力，因为这可能会导致“人为的过拟合”问题（董豪老师语），即我们在验证集上调参，导致模型在验证集上表现很好，但在实际结果上表现不佳。这套划分方式直到现在依然有着指导意义，在绝大多数情况下都要遵循。
+
+但现代的大模型训练领域往往不再遵循这套划分方式。主要原因有二：其一，现代大模型训练所用到的数据是如此之多，以至于它就算对这些数据过拟合，也不会对实际结果产生太大影响；其二，现代大模型训练需要的资源是极多的，以至于它不可能在训练过程中对验证集进行频繁的评估。
+
+\subsection{欠拟合、过拟合及其解决方法}
+
+我们终于完成了一个神经网络的构建。但是，新的问题又来了，这个问题是在实践中出现的：我们发现，模型在训练的时候可能会出现以下结果：
+\begin{itemize}
+    \item 训练集损失、验证集损失都很高，这说明模型无法很好地拟合训练数据，这种情况称为欠拟合。
+    \item 训练集损失很低，验证集损失很高，这说明模型在训练数据上表现很好，但在未见过的数据上表现很差，这种情况称为过拟合。
+\end{itemize}
+
+欠拟合的直接原因是模型没能学到与数据本身规律相关的特征，根本原因是模型太简单（参数过少）。现代机器学习中欠拟合已经很少见了，因为现代算力充足、模型复杂度可以堆得很高，往往不会出现欠拟合的情况。即使是出现了，也很容易解决：我们可以通过增加模型的复杂度、延长训练时间等手段来缓解欠拟合。
+
+过拟合则较多见，直接原因是模型在训练数据上学到了太多\textbf{仅与这批数据有关的}特征，而学到\textbf{与数据本身的规律有关的}特征较少；根本原因是模型太复杂（参数过多），而训练数据又太少。因此，解决过拟合的办法有三：一是增加训练数据，二是降低模型复杂度，三是在模型出现过拟合现象之前就停止训练。
+
+降低模型复杂度的手段，也叫做\textbf{正则化}。有两种手段进行正则化：
+\begin{itemize}
+    \item 治标：通过惩罚模型较大的参数来降低模型复杂度。常见的做法是对损失函数增加一个正则化项：
+    \[ \mathcal{L} = \sum_{i=0}^N (f(\mathbf{x}_i)- y_i)^2 + \lambda \sum_{j=0}^M |w_j|^2 \]
+    其中$\lambda$是一个正数，称为正则化系数，$M$是模型参数的数量。这是L2正则化，通过平方和对模型参数进行惩罚，使得模型参数尽量小，从而降低模型复杂度。另一种常见的正则化方法是L1正则化，通过绝对值和对模型参数进行惩罚：
+    \[ \mathcal{L} = \sum_{i=0}^N (f(\mathbf{x}_i)- y_i)^2 + \lambda \sum_{j=0}^M |w_j| \]
+    注意到L1正则化对小数值的惩罚比L2正则化更大（$\forall |x|<1, |x| > x^2$），因此L1正则化更容易产生稀疏解，即使得模型参数中有更多的数值为0；而L2正则化更容易产生较小的数值，但不容易产生稀疏解。
+    \item 治本：直接降低模型复杂度，常见的做法是在训练过程中将部分数值随机置为0，防止模型过度依赖某些特征，这种方法称为Dropout。
+\end{itemize}
+
+L1正则化和L2正则化的区别也可由图解\cref{fig:regularization}来说明。在这张图中，损失函数与$L$与$w$的参数是紫色线，绿色是最优解；蓝色是L2正则化，粉红色是L1正则化。我们可以看到，L1正则化的最优解容易落在0处，而L2正则化的最优解则不容易落在0处。\supercite{xiaomoxing2021regularization}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{regularization.jpg}
+    \caption{L1正则化和L2正则化的区别}
+    \label{fig:regularization}
+\end{figure}
+
+\subsection{优化器和学习率调度器}
+
+我们刚刚已经论证过了：只有损失函数是凸函数的时候，梯度下降法才能保证取到最小值。但在实际应用中，损失函数往往不是凸函数，所以我们无法保证梯度下降法一定能取到最小值。
+
+虽然机器学习是“差不多就行”，但差太多了也不行。我们需要一些手段防止进入局部最小值，这类手段统称为“优化器”。常见的防止进入局部最小值的办法有以下几种：
+\begin{description}
+    \item[随机梯度下降] 在每次迭代中，不选择整个训练集来计算梯度，而是随机选择一个小批量的样本来计算梯度。这种方法可以增加梯度的随机性，从而帮助模型跳出局部最小值。
+    \item[动量法] 在每次迭代中，除了考虑当前的梯度，还考虑之前的梯度方向，从而加速收敛并减少震荡。换句话说，在基本的梯度下降法中，参数更新满足以下条件：
+    \[\theta_{n+1} = \theta_n - \eta \nabla \mathcal{L}(\theta_n)\]
+    而在动量法中，参数更新满足以下条件：
+    \[v_{n+1} = \beta v_n + (1 - \beta) \nabla \mathcal{L}(\theta_n)\]
+    \[\theta_{n+1} = \theta_n - \eta v_{n+1}\]
+    其中$v_n$是动量，$\beta$是动量系数，通常取值在0.9左右。这样有点像引入了一个“惯性”，使得参数即使更新到了局部最小值，也会因为动量的作用而“冲出去”。
+    \item[自适应学习率] 在每次迭代中，根据梯度的大小动态调整学习率，从而在不同的参数维度上使用不同的学习率。常见的自适应学习率优化器有AdaGrad、RMSProp和Adam等。Adam优化器结合了动量法和自适应学习率的优点，使得参数更新更加稳定和高效，是常见的优化器之一。
+\end{description}
+
+另外，我们也论证过：在$ 0 < \eta < \frac{2}{L}$时，梯度下降法将收敛到一个局部最小值。但在实际应用中，我们往往无法知道$L$的具体数值，所以我们无法确定学习率$\eta$的具体取值；为了防止学习率过大或过小导致的震荡或收敛过慢，我们可以使用学习率调度器来动态调整学习率：最简单的学习率调度器会先“大步流星”，快速找到一个较小的损失函数值，然后随后逐渐变成“小步慢走”，以便在接近最小值时能够更稳定地收敛。
+
+常见的学习率调度策略有以下几种：
+\begin{description}
+    \item[指数衰减] 学习率随着训练轮数的增加而指数衰减，通常使用以下公式：
+    \[\eta_n = \eta_0 \cdot \gamma^n\]
+    其中$\eta_0$是初始学习率，$\gamma$是衰减因子，$n$是当前训练轮数。
+    \item[阶梯衰减] 学习率在训练过程中按照预定的阶梯函数进行衰减，即在特定的训练轮数后，学习率会突然下降。
+    \item[余弦退火] 学习率在训练过程中按照余弦函数进行衰减，通常使用以下公式：
+    \[\eta_n = \eta_\text{min} + \frac{1}{2}(\eta_\text{max} - \eta_\text{min})(1 + \cos(\frac{\pi n}{N}))\]
+    其中$\eta_\text{min}$和$\eta_\text{max}$分别是最小和最大学习率，$N$是总训练轮数，$n$是当前训练轮数。
+\end{description}
+
+\subsection{判断分类模型性能的常见指标}
+
+虽然损失函数本身是衡量模型性能的权威指标，但不直观。我们通常会使用一些更直观的指标来衡量模型的性能，例如准确率、精确率、召回率和F1分数等。
+
+为统一起见，我们把实际为真、预测为真的样本记为真阳性；实际为假、预测为真的样本记为假阳性；实际为真、预测为假的样本记为假阴性；实际为假、预测为假的样本记为真阴性。
+
+\begin{description}
+    \item[准确率] 指的是正确预测的样本数量占总样本数量的比例，即真阳性和真阴性占总样本的比例。
+    \item[精确率] 指的是在所有被预测为正类的样本中，实际为正类的比例，即真阳性占真阳性和假阳性的比例。
+    \item[召回率] 指的是在所有实际为正类的样本中，被正确预测为正类的比例，即真阳性占真阳性和假阴性的比例。
+    \item[F1分数] 是精确率和召回率的调和平均数。
+\end{description}
+
+\begin{mdframed}[frametitle=例子：HIV检测的精确率和召回率]
+    \itshape
+    \hspace{2em}为了防控艾滋病，很多人提出“国家应当对艾滋病进行全面普查”，以便及时发现感染者并进行隔离治疗。那么我们构思以下模型：存在一个艾滋病检测手段准确率为99.9\%，即如果一个人感染了HIV，则有99.9\%的概率报告“阳性”，剩下0.1\%即“未检出”；如果一个人没有感染HIV，则有99.9\%的概率报告“阴性”，剩下0.1\%即“假阳性”。
+
+假设现在有100万人，其中1000人感染了HIV。根据上述检测手段，我们可以计算出：
+\begin{itemize}
+    \item 真阳性：1000人中有999人被正确检测为阳性。
+    \item 假阴性：1000人中有1人被错误检测为阴性。
+    \item 真阴性：999000人中有998001人被正确检测为阴性。
+    \item 假阳性：999000人中有999人被错误检测为阳性。
+\end{itemize}
+于是在被报告为阳性的1998人中，只有999人真正感染了HIV，精确率为50\%。其实实际上我国HIV平均携带概率也差不多是0.09\%，所以这个检测手段在普查上的表现是非常糟糕的，我们也不能将其作为大规模筛查的手段。当然，也可以进行二次筛查，也就是对被报告为阳性的1998人进行更准确的检测，这样就能把真正的感染者筛选出来，但成本显然是比较高昂的。
+
+现实很好反映了这一点：根据FDA等权威机构的数据，HIV快速检测的灵敏度（召回率）超过99\%，特异性（真阴性率）接近99.9\%；但以美国2019-2024年对2190万次检测的真实世界研究为例，特异性达到99.86\%，精确率68.4\%\supercite{zhu-real-world-2026}，所以这就是为什么HIV检测不推荐对普通人群进行普查，而是采用风险分层筛查策略。
+
+但这不能说明我们的检测手段是不好的。实际上在医院中，该手段必然是辅助检测艾滋病的重要手段，因为召回率非常高，且医生几乎只会对高风险人群进行检测，这些高风险人群的感染率不可能低：假如某高危人群的感染率大致在10\%左右，那么10000人中就有1000人感染了HIV，那么在被报告为阳性的$999+9 = 1008$人中，真正感染者的比例就达到了99.1\%，精确率就非常高了。
+\end{mdframed}
+
+这个例子也很好地说明了：\textbf{不同的应用场景需要不同的指标来衡量模型的性能}，我们不能简单地说一个模型好坏，而是要看它在特定场景下的表现。
+
+\subsection{多分类问题}
+
+我们刚刚解决了上述二分类问题，现在可以试试解决MNIST-10这个更难的问题了。
+
+同理，我们直接进行一个向量化，把这一百万个图片表示为一个784维空间中的一百万个点。然后，我们试图找一个超平面把这些点分开。但是问题来了：\textbf{我们现在有10个类别，而一个超平面只能把空间分成两部分}。这显然是不够的。
+
+或许有的人会思考：直接弄一大堆超平面不就行了？比如说，弄45个超平面，每个超平面负责把一个类别和其他类别分开。这样就能把10个类别分开了。理论上这是可行的，但是问题是：\textbf{这些超平面之间是相互独立的}，它们并没有协同工作来优化整体的分类效果。这样一来，整体的分类效果可能并不好，我们需要新的思路。
+
+一个容易想到的思路是把独立求解的多个方程合并成一个方程组，也就是：
+\[\begin{cases}
+\mathbf{W}_0^T \mathbf{x} + b_0 = 0 \\
+\mathbf{W}_1^T \mathbf{x} + b_1 = 0 \\
+\mathbf{W}_2^T \mathbf{x} + b_2 = 0 \\
+\vdots \\
+\mathbf{W}_9^T \mathbf{x} + b_9 = 0
+\end{cases}\]
+这个还是太难看了，我们利用一些线性代数的知识，把它写成矩阵形式：
+\[ \mathbf{W}^T \mathbf{x} + \mathbf{b} = \mathbf{0} \]
+
+上述$\mathbf{b}$和$\mathbf{0}$是两个10维向量，而$\mathbf{W}$是一个784x10的矩阵。这个方程的意义是：对于每一个类别 $i$，我们都有一个对应的线性函数：
+\[ f_i(\mathbf{x}) = \mathbf{W}_i^T \mathbf{x + b_i} \]
+其中 $\mathbf{W}_i$ 是矩阵 $\mathbf{W}$ 的第 $i$ 列，$\mathbf{b}_i$ 是向量 $\mathbf{b}$ 的第 $i$ 个元素；$\mathbf{x}$越像某一个类别，$f_i(\mathbf{x})$ 的值就越大。这个东西的输出是一个十维的向量，每个元素对应一个类别的得分。
+
+观察二分类问题与这个问题的异同：在二分类问题中，我们有一个权重向量 $\mathbf{W}$ 和一个偏置标量 $b$，而在这个多分类问题中，我们有一个权重矩阵 $\mathbf{W}$ 和一个偏置向量 $\mathbf{b}$。这里的权重矩阵 $\mathbf{W}$ 的每一列对应一个类别的权重向量，而偏置向量 $\mathbf{b}$ 的每个元素对应一个类别的偏置。换句话说，这玩意实际上是把10个二分类器“拼”成了一个多分类器，但这个方法和上述“分成很多个独立超平面”的方法不同：这里的权重矩阵和偏置向量是一起优化的，从而实现协同工作。
+
+那剩下的问题直接进行一个路径依赖：定义损失函数，寻找损失函数最小值；在这个过程中使用梯度下降来优化权重矩阵和偏置向量。这里的损失函数可以使用交叉熵损失函数：
+\[ L({y}, \hat{y}) = -\sum_{i=1}^{C} y_i \log(\hat{y}_i) \]
+其中 $C$ 是类别数，$y_i$ 是真实类别的独热编码（one-hot encoding），$\hat{y}_i$ 是预测类别的概率。通过最小化这个损失函数，我们可以优化模型的分类性能。
+
+\begin{mdframed}[frametitle=信息熵与交叉熵]
+    \itshape
+
+    \hspace{2em}所谓“信息熵”，是指一个随机变量的不确定性。
+    
+    为了衡量一件事所含的信息量，可以从概率的角度来考虑：如果这件事的发生概率很高，那么“这件事发生”所含的信息量就很少；反之，如果概率很低，那么“这件事发生”的信息量就很多。另外，如果把两件事拼在一起，那么它们所含的信息量应该是它们所含信息量的和。于是我们可以定义一句话所含的信息量为：
+    \[ I(x_0) = -\log P(x_0) \]
+    其中$x_0$是一件事，$P(x_0)$是这件事发生的概率。
+
+    而在物理学中，熵指的是一个系统的无序程度。信息熵的定义和物理学中的熵有着类似的含义：信息熵越大，系统的不确定性就越大；反之，信息熵越小，系统的不确定性就越小。
+    
+    对于一个离散的随机变量 $X$，其概率分布为 $P(X)$，信息熵定义为：
+    \[ H(X) = -\sum_{x \in X} P(x) \log P(x) \]
+    交叉熵则是衡量两个概率分布之间的差异。对于两个概率分布 $P$ 和 $Q$，交叉熵定义为：
+    \[ H(P, Q) = -\sum_{x \in X} P(x) \log Q(x) \]
+    在机器学习中，交叉熵常用于分类问题的损失函数，衡量模型预测的概率分布与真实标签的差异。
+
+\end{mdframed}
+
+接踵而至的是两个值得深思的问题。
+
+第一个问题是：怎样将这个十维的向量映射到一个概率分布上？也就是说，如何将每个类别的得分转换为一个概率值，使得所有类别的概率和为1？这可以通过Softmax函数来实现：
+\[ \text{Softmax}(z_i) = \frac{e^{z_i}}{\sum_{j=1}^{C} e^{z_j}} \]
+Softmax函数将每个类别的得分 $z_i$ 转换为一个概率值 $\hat{y}_i$，并且保证所有类别的概率和为1。这样，我们就可以将模型的输出解释为每个类别的预测概率，从而进行多分类任务。
+
+第二个问题是：为什么在多分类问题中，我们就不得不使用高维度向量来表示每个类别的得分，而不是像二分类问题中那样使用一个标量？首先，多分类问题的本质是一个“分类问题”，这里的0到9虽然是数字，但仅代表类别，不具有顺序意义，所以我们需要为不同的类分配不同的维度，仅用一个标量去拟合，那是把分类问题做成了回归问题，丢失了类别之间的独立性和互斥性。其次，在二分类问题中使用一个标量是单纯的省事：对于标量$x$，实际唯一对应了向量$[x, 1-x]$，没有丢失任何信息；但在多分类问题中，使用一个标量$x$什么都对应不了。
+
+\subsection{小结：机器学习的核心过程}
+
+有了这个，我们就发现了一个非常好的算法。
+\begin{enumerate}
+    \item 随机划线，得到一个初始的决策边界；
+    \item 计算损失函数的梯度；
+    \item 沿着梯度下降的方向，更新决策边界；
+    \item 重复步骤2和3，直到损失函数足够小，或其他指标足够好。
+    \item 最终得到一个决策边界，可以用这个决策边界来预测新的数据。
+\end{enumerate}
+这样的算法就是机器学习的核心过程，包括这几个部分：
+\begin{description}
+    \item[前向传播] 从输入到预测数值的过程；
+    \item[反向传播] 从预测值、损失函数的梯度到更新参数的过程；
+    \item[训练过程] 通过前向传播和反向传播不断更新参数的过程。
+    \item[预测过程（评估过程）] 利用训练好的模型来预测新的数据的过程，此时只进行前向传播、不进行反向传播；同时，也不会更新参数。
+\end{description}
+
+\section{简单的回归问题}
+
+所谓回归问题，同样是给定一些$\{x_i\}$和$\{y_i\}$，希望找到一个函数$f$，使得$f(x_i) \approx y_i$；且对于新的输入$x_{new}$，$f(x_{new})$能给出合理的预测，这和分类问题是相似的。但不同的是，回归问题的目标变量$y_i$是\textbf{有顺序意义}的数值，而不是离散的类别；$f(x)$一般也有一定的要求，比如“线性”或“多项式”等。
+
+对于回归问题，一般使用均方误差损失函数（MSE）来衡量模型的预测结果与真实标签的差距。剩下的内容，和分类问题完全一致。
+
+回归问题一般直接使用损失函数的数值（MSE）来衡量模型的性能，而不需要像分类问题那样使用准确率、精确率、召回率等指标。
+
+\section{复杂的非线性问题与多层神经网络}
+
+在实际的情况中，大多数的数据并不能仅用一个超平面来分开。我们需要更复杂的模型来处理这些非线性可分的数据。
+
+但仅仅是二维空间中的二次曲线，就需要6个参数来描述；而在高维空间中，非线性可分的数据可能需要更多的参数来描述。如果直接设计这样的模型，参数数量可能会非常庞大，且难以训练。于是我们引入了多层神经网络的概念，通过堆叠多个线性分类器和非线性激活函数来构建更复杂的模型。
+
+\subsection{激活函数：引入非线性}
+
+受到我们刚刚在“单层线性分类器末尾堆叠输出层”的启发，我们是否可以在单层线性分类器的后面再堆叠一个线性分类器呢？这是可以的。
+\begin{align*}
+\mathbf{h} &= \mathbf{W}_1^\top \mathbf{x} + b_1 \\
+\mathbf{y} &= \mathbf{W}_2^\top \mathbf{h} + b_2
+\end{align*}
+
+不过，简单的堆叠并不会起作用：
+\[ \mathbf{y} = \mathbf{W}_2^\top (\mathbf{W}_1^\top \mathbf{x} + b_1) + b_2 = (\mathbf{W}_2^\top \mathbf{W}_1^\top) \mathbf{x} + (\mathbf{W}_2^\top b_1 + b_2) \]
+我们发现，这样的简单堆叠结果仍然是一个线性分类器，其表达能力并不会比单一的线性分类器更强。
+
+如果定义一个函数$\alpha(\cdot)$，使得它是非线性的，那么我们就可以在两个线性分类器之间插入这个非线性函数：
+\begin{align*}
+\mathbf{h}_1 &= \mathbf{W}_1^\top \mathbf{x} + b_1 \\
+\mathbf{h}_2 &= \alpha(\mathbf{h}_1) \\
+\mathbf{y} &= \mathbf{W}_2^\top \mathbf{h}_2 + b_2
+\end{align*}
+在这种情况下，模型的表达能力将大大增强，因为非线性函数$\alpha(\cdot)$可以引入复杂的非线性关系，使得模型能够拟合更复杂的数据分布，从而能够解决非线性可分的问题。
+
+最常见的激活函数之一是Sigmoid函数：
+\[ \sigma(x) = \frac{1}{1 + e^{-x}} \qquad \frac{d\sigma}{dx} = \sigma(x)(1 - \sigma(x)) \]
+它能把输入映射到$0$到$1$之间，适合二分类任务。但这东西有个大问题：当输入值很大或很小时，梯度会变得非常小，导致\textbf{梯度消失}问题，使得网络难以训练。它的另一个问题是，输出不是中心化的（即均值不为0），这会影响后续层的训练效率。
+
+于是还有一种改进版的Tanh函数：
+\[ \tanh(x) = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}} \qquad \frac{d\tanh}{dx} = 1 - \tanh(x)^2\]
+它把输入映射到$-1$到$1$之间，中心化效果更好，但同样存在梯度消失的问题。
+
+另一类常见的激活函数是ReLU函数（Rectified Linear Unit）和他的兄弟Leaky ReLU：
+\[ \text{ReLU}(x) = \max(0, x) \]
+\[ \text{Leaky ReLU}(x) = \begin{cases} x, & \text{if} x > 0 \\ 0.01x, & \text{if} x \leq 0 \end{cases} \]
+它在正区间保持线性，在负区间输出0或接近0，计算简单且能有效缓解梯度消失问题，但可能导致“神经元死亡”，即某些神经元永远不激活。
+
+于是最近的工作有GELUs、Swish等，都是在尝试找到更好的激活函数，以提升神经网络的性能和训练稳定性。
+
+\subsection{归一化：让数据分布更好}
+
+\begin{mdframed}[frametitle=例子：不同分布的数据对模型训练的影响]\itshape
+    \hspace{2em}现在有一个神经网络（简单线性层，不放输出层）：$\hat{y} = \mathbf{W}^\top \mathbf{x} + b$，其中$\mathbf{W}, \mathbf{x} \in \mathbb{R}^{4}$，$b \in \mathbb{R}$。损失函数：$\mathcal{L} = \frac{1}{2}(\hat{y} - y)^2$，其中$y \in \mathbb{R}$是标签。
+    
+    容易得知，这是一个四维空间内的线性回归问题。
+
+    初始情况下，$\mathbf{W} = [1, 1, 1, 1]^\top$，$b = 0$。
+
+    \begin{itemize}
+        \item 现在输入是：$\mathbf{x} = [1, 2.5, -0.5, -1]^\top$，$y = 8$。
+        \item 现在输入是：$\mathbf{x} = [100, 250, -50, -100]^\top$，$y = 800$。
+    \end{itemize}
+    
+    容易算得，使用梯度下降迭代一次，前者的结果是：$[1.006,1.015,0.997,0.994]^\top$，后者的结果是：$[61,151,-29,-59]^\top$。
+\end{mdframed}
+我们发现，例子中第二个输入是所有特征同时放大了100倍，标签也放大了100倍。从数学上看，这两个问题其实是同一个线性问题（因为 $y$ 和 $\mathbf{x}$ 同步缩放），但在训练过程中，第二个问题的梯度会变得非常大，导致参数更新过快，可能会出现震荡甚至发散的情况。这被称作“梯度爆炸”问题。
+
+与之类似的，如果输入非常小，梯度会变得非常小，导致参数更新过慢，训练过程可能会非常缓慢甚至停滞，这被称作“梯度消失”问题。
+
+实际上，我们知道，根据链式法则，梯度爆炸和梯度消失在深层网络下是非常常见的现象：只要几个层的权重矩阵的范数大于1，梯度就会呈指数级增长；只要几个层的权重矩阵的范数小于1，梯度就会呈指数级衰减。这不是我们希望的：我们希望梯度在训练过程中保持稳定（最好每一层的梯度都稳定在1附近，或者多个层组成的“块”的梯度乘积稳定在1附近），这样才能保证训练过程的稳定性。
+
+从上文我们了解到，如果将数据缩放到一个合理的范围内，那么梯度就会相对稳定，避免了梯度爆炸和梯度消失的问题。这个将数据或特征缩放到一个特定范围内的过程就叫做\textbf{归一化}。
+
+那么要缩放到什么范围呢？通常有两种方法：
+\begin{description}
+    \item[Min-Max归一化] 将数据线性映射到一个固定的范围内，适用于特征值分布有明显的最大值最小值情形，例如图片上的像素值。
+    \item[Z-score归一化] 将数据映射到标准正态分布$\mathcal{N}(0, 1)$，适用于特征值分布较为均匀的情形，例如身高、体重等连续变量。
+\begin{align}
+\mu_B &= \frac{1}{N} \sum_{i=1}^{N} \mathbf{X}_i \\
+\sigma_B^2 &= \frac{1}{N} \sum_{i=1}^{N} (\mathbf{X}_i - \mu_B)^2 \\
+\hat{\mathbf{X}}_i &= \frac{\mathbf{X}_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}} \label{eq:bn_forward_3}\\
+\mathbf{Y}_i &= \gamma \hat{\mathbf{X}}_i + \beta
+\end{align}
+\end{description}
+\cref{eq:bn_forward_3}中的$\epsilon$是一个很小的正数，防止分母为0；$\gamma$和$\beta$是可学习的参数，用于恢复数据的尺度和偏移。
+
+Min-Max很容易解释，但Z-score并不容易理解。我们知道，对于多数数据而言，他们的分布是近似正态分布的，因此将其映射到标准正态分布是合理的；这样有益于将每一层的输入分布都归一化到标准正态分布上，减少了所谓的内部协变量偏移，从而稳定乃至加速了训练\supercite{ioffe2015batchnormalizationacceleratingdeep}。该假说被称作“ICS假说”。
+    
+这种解释看上去没什么毛病，但细思之下其实有问题的：因为实际情况下，不管哪一层的输入都不可能严格满足正态分布，从而单纯地将均值方差标准化无法实现标准分布；其次，就算能做到标准分布，这种诠释也无法进一步解释其他归一化手段起作用的原因。\supercite{kexuefm-6992}
+
+为此，人们设计了对比试验\supercite{santurkar2019doesbatchnormalizationhelp}：
+\begin{enumerate}
+    \item 标准网络，不批量归一化。
+    \item 标准网络，且批量归一化。
+    \item 标准网络，且批量归一化，并且在归一化层后注入\textbf{故意破坏分布}的噪声，保证每个样本的噪声独立，且噪声的分布不满足正态分布，且噪声的量级足够大使得输入分布完全不稳定。
+    \item 标准网络，不批量归一化，但在每个样本的输入中注入与第3步相同的噪声。
+\end{enumerate}
+如果 ICS 假说成立，那么加噪批量归一化的分布稳定性应比普通批量归一化差，训练效果也应更差。但是实验结果出乎意料：
+\begin{itemize}
+    \item 加噪 BN 的训练速度和最终精度与标准 BN几乎一样，但训练途中参数变化很不稳定。
+    \item 加噪 BN 的分布变化比标准网络还要大。
+    \item 相同噪声加给没有BN的标准网络，训练完全失败！
+\end{itemize}
+结果说明，分布稳定性与训练性能之间，没有直接因果关系\supercite{santurkar2019doesbatchnormalizationhelp}！论文的作者又做了些其余的试验，所有结果全都指向同一结论：\textbf{批量归一化的成功与 ICS 无关}。既然 ICS 假说不成立，那么批量归一化的成功究竟是为什么呢？
+
+我们刚才得到了重要定理：如果$0<\eta<\frac{2}{L}$，那么梯度下降一定会使损失函数下降（\cref{thm:gd_convergence}）。为了做到这一点，要么让$\eta$变小，要么就让$L$足够小。但是前者变小意味着学习速度变慢，所以更理想的情况是后者，只要降低了李普希茨常数$L$，就可以使用更大的学习率，从而加速训练。
+
+但$L$是什么呢？它是损失函数$f$的一个性质，和$f$的输入分布无关，所以只能通过调整$f$来降低$L$。
+
+以监督学习为例。设神经网络是$\hat{y} = h(x;\theta)$，损失函数取$\mathcal{L}(y,\hat{y})$，目标是
+\begin{equation}
+    \theta = \arg\min_\theta \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[\mathcal{L}(y, h(x;\theta))\right]
+\end{equation}
+其中$\mathcal{D}$是数据分布。
+
+实际上这玩意就是
+\begin{equation}
+    f(\theta) = \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[\mathcal{L}(y, h(x;\theta))\right]
+\end{equation}
+求梯度
+\begin{align}
+    \nabla_\theta f(\theta) &= \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[\nabla_\theta \mathcal{L}(y, h(x;\theta))\right] \\
+    &= \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[\nabla_h \mathcal{L}(y, h(x;\theta))\nabla_\theta h(x ; \theta)\right]
+\end{align}
+
+我们刚才的目的实际就是探讨$\nabla_\theta f(\theta)$受到李普希茨约束的程度，以及降低$L$的方法。
+
+那么讨论一个最简单的神经网络：$h(x; w, b) = g(\left\langle w, x \right\rangle + b)$，其中$g$是一个非线性函数。于是自然得到
+\begin{equation}\label{eq:grad_b}
+\mathbb{E}_{(x,y) \sim \mathcal{D}}[\nabla_b f(w, b)] = \mathbb{E}_{(x,y) \sim \mathcal{D}}\left[\frac{\partial \mathcal{L}_{w, b}}{\partial g}g'(\left\langle w, x \right\rangle + b)\right]
+\end{equation}
+和
+\begin{equation}\label{eq:grad_w}
+\mathbb{E}_{(x,y) \sim \mathcal{D}}[\nabla_w f(w, b)] = \mathbb{E}_{(x,y) \sim \mathcal{D}}\left[\frac{\partial \mathcal{L}_{w, b}}{\partial g}g'(\left\langle w, x \right\rangle + b) x\right]
+\end{equation}
+
+先分析$b$的梯度，这个好分析些。
+
+在一般情况下，激活函数都满足一个特性：其导数的绝对值被一个常数$M$所限制，即$|g'(z)| \leq M$。那么，这个特性对损失函数是否成立？答案显然是不成立的，至少通常情况下是不成立的。比如交叉熵可以简写为$-\sum\log p$，显然导数是$-\frac{1}{p}$，不存在约束；但损失函数连同最后一层的激活函数（输出层）一起考虑的时候（比如套上sigmoid），则通常满足这个约束。
+
+当然，确实存在一些情况不成立，例如回归问题用MSE且最后一层不加激活函数输出层的情况。这种情况下我们只能期望模型有良好的初始化和优化器，使得训练过程中损失函数的梯度比较稳定（实际上能训练成功的神经网络大多满足这个条件）。这也是我们提到过的结论\supercite{kexuefm-6992}：在实际应用中，神经网络的训练过程通常是稳定的，尽管理论上可能存在梯度爆炸或消失的问题。
+
+所以我们得到两个假设：
+\begin{itemize}
+    \item 激活函数的导数被一个常数$M$所限制。
+    \item 损失函数连同输出层的激活函数一起考虑时，其导数的绝对值被一个常数$N$所限制。
+\end{itemize}
+
+在\cref{eq:grad_b}中，我们看到$\frac{\partial \mathcal{L}_{w, b}}{\partial g}$和$g'(\left\langle w, x \right\rangle + b)$分别被$N$和$M$所限制，其梯度平稳。
+
+于是现在该考虑$w$的梯度：和这个不一样，其梯度和$x$有关。
+
+我们应当能够得到以下内容：
+\begin{align}
+    & \left|\left|\mathbb{E}_{(x,y) \sim \mathcal{D}}[\nabla_w f(w+\Delta w, b)] - \mathbb{E}_{(x,y) \sim \mathcal{D}}[\nabla_w f(w, b)]  \right|\right|_2 \\
+    =& \left|\left|\mathbb{E}_{(x,y) \sim \mathcal{D}}\left[\frac{\partial \mathcal{L}_{w+\Delta w, b}}{\partial g}g'(\left\langle w+\Delta w, x \right\rangle + b) x - \frac{\partial \mathcal{L}_{w, b}}{\partial g}g'(\left\langle w, x \right\rangle + b) x\right]  \right|\right|_2
+\end{align}
+
+提取公因式$x$，得到
+\begin{equation}
+    \left(\frac{\partial \mathcal{L}_{w+\Delta w, b}}{\partial g}g'(\left\langle w+\Delta w, x \right\rangle + b) - \frac{\partial \mathcal{L}_{w, b}}{\partial g}g'(\left\langle w, x \right\rangle + b)\right) x
+\end{equation}
+根据前面的讨论，左边这玩意被约束在某个范围内，所以依然是平稳项。既然如此，不如假设它满足L约束并进行简化，给它取个名字叫“something good”，那么我们就得到了以下式子：
+
+\begin{align}
+& \left|\left|\mathbb{E}_{(x,y) \sim \mathcal{D}}\left[(\text{something good} \times x)\right]\right|\right| \\
+\leqslant & \sqrt{\mathbb{E}_{(x,y) \sim \mathcal{D}}[\text{something good}^2] \cdot \mathbb{E}_{(x,y) \sim \mathcal{D}}[\|x\|_2^2]}
+\end{align}
+$\mathbb{E}_{(x,y) \sim \mathcal{D}}[\|x\|_2^2]$和参数$w$，$b$无关，我们希望降低$L$，完全可以从这个东西入手！
+
+然而，我们虽然希望降低$L$，前提自然是不要明显降低神经网络的拟合能力。在这个前提下，显然平移变换是一个非常好的选择，故而考虑映射$x \mapsto x - \mu$，使得下列式子最小。
+
+\begin{equation}
+\mathbb{E}_{(x,y) \sim \mathcal{D}}[\|x - \mu\|_2^2]
+\end{equation}
+
+这是个二次函数的最小值问题。不难解得$\mu$是样本均值时最优。
+
+\textbf{所以Z-score批量归一化的第一步：中心化能够显著降低李普希茨常数，从而加速训练}。
+    
+除了平移变换，还有伸缩变换也是一个不错的选择，考虑映射$x-\mu \mapsto (x-\mu) / \sigma$。这里的$\sigma$是一个和$x$形状一样的向量，规定这里的向量除法是逐元素除法，于是问题还是最小化下列式子：
+\begin{equation}
+\mathbb{E}_{(x,y) \sim \mathcal{D}}[\|(x - \mu) / \sigma\|_2^2]
+\end{equation}
+
+但是问题是：缩放到哪里比较好？如果一味追求很小的$L$，那直接$\sigma \to \infty$不就好了么？显然不行，因为这会导致模型的拟合能力大幅下降。所以我们需要一个折中方案。
+
+回看$b$的梯度：
+\begin{equation}
+\mathbb{E}_{(x,y) \sim \mathcal{D}}[\nabla_b f(w, b)] = \mathbb{E}_{(x,y) \sim \mathcal{D}}\left[\frac{\partial \mathcal{L}_{w, b}}{\partial g}g'(\left\langle w, x \right\rangle + b)\right]
+\end{equation}
+
+我们发现偏置项的梯度不会被$x$影响，所以它大概率会是一个较好的标准。要是果真如此，那就相当于把输入$x$的这一项权重直接缩放到1了，换言之$\mathbb{E}_{(x,y) \sim \mathcal{D}}[\|(x - \mu) / \sigma\|_2^2]$是一个全1向量。
+
+那么一个相对自然的选择就是把$\sigma$选成样本的标准差了。于是我们得到了Z-score批量归一化的第二步：缩放。
+
+所以\textbf{Z-score批量归一化的第二步：缩放，不一定能降低李普希茨常数。但是这东西有类似学习率自适应的作用，使得每一层的更新更同步，减少了在某一个特定的层上过拟合的可能性，能提升模型的泛化能力}\supercite{kexuefm-6992}。
+
+有了这两个推导过程，那么我们就能发现Z-score批量归一化究竟是个什么东西了：其本质是在降低李普希茨常数，从而使得训练更稳定，能够使用更大的学习率，进而加速训练。
+
+当然，这个分析过程的另两个结论是：
+\begin{itemize}
+    \item Z-score BN要放在线性层（或卷积层）的前面，因为它是对输入进行变换的。
+    \item Z-score BN不能避免的是batch size要大些（因为希望$\mu$和$\sigma$的估计更准确），在小batch的情况下，效果会大打折扣，对算力提出了要求。
+\end{itemize}
+为了解决这些问题，所以才有了层归一化等其他归一化方法的出现。但单论效果而言，批归一化的效果还是一骑绝尘的。
+
+如果我们把这里的batch换成单个样本，那么就得到了层归一化（Layer Normalization）。其计算公式如下：
+\begin{align}
+\mu_i &= \frac{1}{D} \sum_{j=1}^{D} \mathbf{X}_{ij} \\
+\sigma_i^2 &= \frac{1}{D} \sum_{j=1}^{D} (\mathbf{X}_{ij} - \mu_i)^2 \\
+\hat{\mathbf{X}}_{ij} &= \frac{\mathbf{X}_{ij} - \mu_i}{\sqrt{\sigma_i^2 + \epsilon}} \\
+\mathbf{Y}_{ij} &= \gamma \hat{\mathbf{X}}_{ij} + \beta
+\end{align}
+
+这是对这个\textbf{输入向量本身}进行归一化。它的效果也不错，尤其是在小batch size的情况下，而且算得快，多用于一些算力比较紧张的场景，例如移动端的模型，或在线计算的模型。所谓“在线计算”者，指的是需要即时性的算法（尤其是那种不能等整个batch都准备好了才能进行计算的算法），例如强化学习中的一些算法，或一些需要实时响应的算法。
+
+可以说，归一化虽然很早就被用于神经网络的训练，但它得到解释已经是很久以后的事情了。这种实践先于理论的现象，在科研中非常常见。
+
+\subsection{残差连接：让网络更深}
+
+虽然批量归一化显著缓解了梯度爆炸的问题，但梯度消失的问题依然存在。其根本原因还是我刚刚提到的：只要几个层的权重矩阵的范数大于1，梯度就会呈指数级增长；只要几个层的权重矩阵的范数小于1，梯度就会呈指数级衰减。
+
+回顾一下多层神经网络的反向传播过程，假设网络$h = f_n \circ f_{n-1} \circ \cdots \circ f_1$，在反向传播过程中，我们需要计算每一层的梯度$\frac{\partial L}{\partial f_i}$，其中$L$是损失函数。
+
+于是我们可以通过链式法则得到：
+\begin{equation}
+\frac{\partial L}{\partial f_i} = \frac{\partial L}{\partial h} \cdot \prod_{j=i+1}^{n} \frac{\partial f_j}{\partial f_{j-1}}
+\end{equation}
+如果梯度的绝对值一直很小，那么就会出现一个问题：$\prod_{j=i+1}^{n} \frac{\partial f_j}{\partial f_{j-1}} \rightarrow 0$，导致$\frac{\partial L}{\partial f_i} \rightarrow 0$是不可避免的。
+
+如果说传统的神经网络目的是学习$f$，那么残差网络的目的是学习$f - \mathbf{I}$，也就是说它试图学习输入和输出之间的差异（残差），而不是直接学习输出。
+
+我们知道，如果堆叠层数很多，那么神经网络不可避免地会陷入梯度消失的问题，导致训练变得非常困难。但引入残差连接之后，我们发现：网络理论上是可以学$f(x)=x$的，换句话说这个层被“跳过”\supercite{he2015deepresiduallearningimage}。于是，如果这个层学不到有用的特征，那么它至少可以学到一个恒等映射（identity mapping），从而保证了网络的性能不会因为层数增加而下降。
+
+如果记$g(x) = f(x) + x$（这里是加号的原因是因为残差连接是将输入$x$直接加到输出上，促使网络学习$f(x) - x$），我们可以发现，对于残差块那一层出现了一个额外的恒等映射：
+\begin{equation}
+\frac{\partial L}{\partial g_i} = \frac{\partial L}{\partial h} \cdot \prod_{j=i+1}^{n} \frac{\partial g_j}{\partial g_{j-1}} + \frac{\partial L}{\partial h} \cdot \prod_{j=i+1}^{n} \frac{\partial g_j}{\partial g_{j-1}} \cdot \frac{\partial g_i}{\partial x}
+\end{equation}
+由于$\frac{\partial g_i}{\partial x} = 1 + \frac{\partial f_i}{\partial x}$，所以即使$\prod_{j=i+1}^{n} \frac{\partial g_j}{\partial g_{j-1}}$很小，仍然有一个恒等映射的梯度可以传递\supercite{he2015deepresiduallearningimage,he2016identitymappingsdeepresidual}，从而大大缓解了梯度消失的问题。
+
+归一化和残差连接可以共同作用来控制梯度的平稳\supercite{panigrahi2018analysisgradientpropagationbatch}。不过，和归一化不一样，残差连接并不适用于浅层网络。一个浅层网络，比如说只有两三层，通常不会出现梯度消失的问题，此时的好处就微乎其微了。
+
+\section{使用PyTorch的实操}
+
+我们刚才已经将线性层掰开说透了，接下来就需要真刀真枪地将这些理论知识应用到实际的代码中。Torch是一个非常流行的深度学习框架，它提供了丰富的API和工具，使得我们可以方便地构建和训练神经网络模型，并且有着自动求导等功能；使用者既不需要关心其中的具体实现细节，也不需要手写复杂的反向传播。使用Python的Torch也叫做PyTorch。
+
+我们将带着大家从头构建一个有三个线性层的神经网络，它在MNIST-10数据集上表现良好。
+
+\subsection{划分数据并加载}
+
+首先导入相关的库：
+\begin{minted}{python}
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+
+dataset_all = datasets.MNIST(root='./data', train=True, download=True, transform=transforms.ToTensor())
+\end{minted}
+因为 \mintinline{python}{torchvision} 提供了很多常用的数据集和数据增强方法，所以我们可以直接使用它来加载MNIST数据集。\mintinline{python}{dataset_all} 是一个包含所有训练数据的 \mintinline{python}{Dataset} 对象。
+
+下一步，将其划分为三块。
+\begin{minted}{python}
+train_size = int(0.8 * len(dataset_all))
+val_size = int(0.1 * len(dataset_all))
+test_size = len(dataset_all) - train_size - val_size
+train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset_all, [train_size, val_size, test_size])
+\end{minted}
+
+接下来，为每个数据集创建一个 \mintinline{python}{DataLoader}，用于批量加载数据。
+\begin{minted}{python}
+BATCH_SIZE = 64
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+\end{minted}
+\mintinline{python}|BATCH_SIZE| 是批大小，是重要的超参数之一。事实上，分批处理本意是希望在算力充足的前提下加大并行、尽可能压榨计算机的算力；后来，批大小被发现对模型的训练有着重要的影响。一般来说，较小的批大小可以使模型更好地泛化，但训练时间可能会更长；而较大的批大小可以加快训练速度，但可能会导致模型泛化能力变差\supercite{keskar2017largebatchtrainingdeeplearning}。这是因为，小批相比大批，会带来一定的梯度噪声，可以看作是一种隐含的正则化机制。这种噪声驱动着参数向“证据”更大的区域（即平坦极小值）移动；当学习率固定时，存在一个最优的批大小能最大化测试集准确率。这个最优批大小 $B_\text{opt}$与学习率 $\eta$ 和训练集大小 $N$ 成正比$B_\text{opt} \propto \eta N$，并且与模型的复杂度成反比$B_\text{opt} \propto 1/C$，其中$C$是模型的复杂度指标\supercite{smith2018bayesianperspectivegeneralizationstochastic}。
+
+在现实情况下，批大小的选择通常是一个经验性的过程，需要根据具体任务和数据集进行调整。一般来说，常用的批大小都是2的若干次幂，如32、64、128等。
+
+如果要调整批大小，最好同步的调整学习率。如果使用SGD优化器，通常采用线性缩放：若$B_\text{new} = k \cdot B_\text{old}$，则$\eta_\text{new} = k \cdot \eta_\text{old}$。如果使用Adam优化器，则通常采用平方根缩放：若$B_\text{new} = k \cdot B_\text{old}$，则$\eta_\text{new} = \sqrt{k} \cdot \eta_\text{old}$\supercite{malladi2024sdesscalingrulesadaptive}。严格的数学证明可见参考文献。
+
+不过我们这个是非常玩具的模型，所以暂不考虑这个问题，先设成64。
+
+\subsection{定义模型、损失函数、优化器和学习率调度器}
+
+接下来就需要定义一个模型。我们将定义一个简单的三层全连接神经网络，每一层都是线性层，激活函数使用ReLU。
+\begin{minted}{python}
+class SimpleNN(nn.Module):
+    def __init__(self):
+        super(SimpleNN, self).__init__()
+        self.fc1 = nn.Linear(28*28, 800)  # 第一层线性层，输入维度为28*28，输出维度为800
+        self.fc2 = nn.Linear(800, 64)     # 第二层线性层，输入维度为800，输出维度为64
+        self.fc3 = nn.Linear(64, 10)      # 第三层线性层，输入维度为64，输出维度为10（对应10个类别）
+        self.relu = nn.ReLU()             # ReLU激活函数
+
+    def forward(self, x):
+        x = x.view(-1, 28*28)  # 由于输入是二阶张量，需要将其展平为一阶张量
+        x = self.relu(self.fc1(x))  # 第一层线性变换 + ReLU激活不使用学习率调度器（因为模型过于简单）：
+        x = self.relu(self.fc2(x))  # 第二层线性变换 + ReLU激活
+        x = self.fc3(x)  # 第三层线性变换（输出层）
+        return x
+\end{minted}
+
+第三次线性变换这里不要写 \mintinline{python}{self.softmax}，这是PyTorch的内部实现导致的：PyTorch经常将损失函数和最后一层的激活函数结合在一起，尤其是交叉熵损失函数，它内部已经包含了softmax操作，所以我们不需要在模型中显式地添加softmax层。
+
+之后，我们使用交叉熵损失函数、Adam优化器和指数衰减的学习率调度器来训练模型。
+\begin{minted}{python}
+LEARNING_RATE = 0.001
+model = SimpleNN()
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)  # 每10个epoch将学习率降低为原来的0.1倍
+\end{minted}
+
+
+\subsection{训练循环}
+
+\begin{minted}{python}
+NUM_EPOCHS = 20
+for epoch in range(NUM_EPOCHS):
+    model.train()  # 设置模型为训练模式，即允许梯度更新
+    running_loss = 0.0
+    for i, (inputs, labels) in enumerate(train_loader):
+        optimizer.zero_grad()  # 清空优化器内累积的梯度
+        outputs = model(inputs)  # 前向传播
+        loss = criterion(outputs, labels)  # 计算损失
+        loss.backward()  # 反向传播
+        optimizer.step()  # 更新参数
+        running_loss += loss.item()  # 累加损失
+    # scheduler.step()  # 更新学习率
+\end{minted}
+这里将学习率调度器注释掉了，因为epoch数量太少了，学习率调度器的作用不明显，反而增加了计算负担。
+
+在这段代码里，我们发现我们没有定义 \mintinline{python}{loss.backward()}，但代码仍能运行。这是因为PyTorch的自动求导机制会在计算图中自动记录操作，并在调用 \mintinline{python}{loss.backward()} 时自动计算梯度，不需要手动定义，极为方便。
+
+随着训练的进行，我们可以在每个epoch结束后打印出当前的平均损失，以便观察模型的训练情况。
+
+\subsection{验证和测试}
+
+验证和测试的过程与训练类似，只是我们不需要进行梯度更新，所以可以使用 \mintinline{python}{torch.no_grad()} 来关闭梯度计算，从而节省内存和计算资源。我们在这里只给出验证集上的代码，测试集上的代码模仿即可。
+\begin{minted}{python}
+model.eval()  # 设置模型为评估模式，即不进行梯度更新
+correct = 0
+total = 0
+with torch.no_grad():  # 关闭梯度计算
+    for inputs, labels in val_loader:
+        outputs = model(inputs)  # 前向传播
+        _, predicted = torch.max(outputs.data, 1)  # 获取预测结果
+        total += labels.size(0)  # 累加样本总数
+        correct += (predicted == labels).sum().item()  # 累加预测正确的样本数
+accuracy = 100 * correct / total  # 计算准确率
+print(f'Validation Accuracy: {accuracy:.2f}%')
+\end{minted}
+
+我们只需要将这些代码块拼在一起，就能够形成一个完整的训练过程了。

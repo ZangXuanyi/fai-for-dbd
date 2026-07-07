@@ -1,0 +1,53 @@
+\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\allowdisplaybreaks
+% \usepackage{fontspec}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{mdframed}
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage{booktabs}
+\usepackage[bibstyle=alphabetic, backend=biber, sorting=ynt]{biblatex}
+\renewcommand*{\bibfont}{\small}
+\usepackage{xcolor}
+\usepackage{minted}
+\setminted{
+    baselinestretch=1.0,       % 行间距
+    frame=single,               % 边框样式
+    framesep=2mm,              % 边框间距
+    rulecolor=\color{black},   % 边框颜色
+    breaklines,           % 自动换行
+    breakanywhere=false,       
+    showspaces=false,          % 不显示空格
+    showtabs=false,            % 不显示制表符
+    tabsize=4,                 % 制表符大小
+    autogobble=true,
+}
+\setmintedinline{bgcolor=yellow!20}
+
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{hyperref}
+\usepackage{nameref}
+\usepackage{cleveref}
+
+\title{\Huge \bfseries 人工智能基础 讲义}
+\author{臧炫懿\and DeepSeek-V4-Pro}
+\date{\today}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{定理}[section]
+\newtheorem{lemma}{引理}[theorem]
+\newtheorem{proposition}{命题}[section]
+\newtheorem{corollary}{推论}[theorem]
+
+\theoremstyle{definition}
+\newtheorem{example}{例}[section]
+\newtheorem{definition}{定义}[section]
+
+\theoremstyle{remark}
+\newtheorem*{remark}{注}
+\newtheorem*{note}{说明}
+\newtheorem{case}{情况}
+
+\addbibresource{references.bib}
