@@ -1,7 +1,1092 @@
 \chapter{人工智能的数学基础}
 
-现代人工智能的发展，离不开分析学、线性代数、概率论、统计学、优化理论等数学基础。它们为算法设计提供了坚实的理论支撑，也为模型分析和性能评估提供了工具。
+现代人工智能的发展，离不开分析学、线性代数、概率论、统计学、优化理论等数学基础。它们为算法设计提供了坚实的理论支撑，也为模型分析和性能评估提供了工具。考虑到读者可能没有系统地学习过这些数学课程，我们将给出一些简明的数学基础知识，帮助读者快速掌握人工智能所需的数学工具。
 
-\section{简明概率论}
+\section{简明微积分}
 
-\section{简明统计学}
+分析学是几乎所有数学理论的基础，也是人工智能的基础之一。它主要研究函数、数列等的运算和性质，可以用来解释机器学习中遇到的很多现象。同时，分析学本身是一门非常严谨的学科，但我们机器学习领域比较重视运算、相对轻视分析，所以下文主要是从运算的角度来讲解分析学的基础知识。
+
+数院的同学们看到下面这一大串非常不严谨的推导可能会生气，不过我们先不去管他们。
+
+\subsection{极限和连续}
+
+\paragraph{极限}
+
+“趋近”是我们经常说的一个词。比方说函数$f(x) = 1/x$，当$x$从正数一侧趋近于0时，$f(x)$的值会趋近于正无穷大；当$x$从负数一侧趋近于0时，$f(x)$的值会趋近于负无穷大。我们可以说$\lim_{x \to 0^+} f(x) = +\infty$，$\lim_{x \to 0^-} f(x) = -\infty$。
+
+前者，我们称为“右极限”，即“从右边趋近”；后者，我们称为“左极限”，即“从左边趋近”。
+
+对于一个函数$f(x)$，如果$\lim_{x \to x_0^+} f(x) = \lim_{x \to x_0^-} f(x)$，则称函数$f(x)$在点$x_0$处有极限，记作$\lim_{x \to x_0} f(x)$。所以上述函数$f(x) = 1/x$在点$x_0 = 0$处没有极限；但函数$g(x) = \sin x / x$在点$x_0 = 0$处有极限，且$\lim_{x \to 0} g(x) = 1$。
+
+类似的可以定义“无穷远处的极限”，即当$x \to +\infty$时，$f(x)$的值趋近于某个常数$A$，记作$\lim_{x \to +\infty} f(x) = A$。
+
+需要说明，函数在某一点处的极限是否存在，和函数在该点处是否有定义没有关系；但和函数在该点“附近”有没有定义、怎样定义有关系。比方说函数$f(x) = \sin x / x$在点$x_0 = 0$处没有定义，但它在点$x_0 = 0$处有极限。
+
+\paragraph{连续}
+
+高中的时候经常说一个“函数连续”，当时说的是“图像连续不断”。现在我们给出一个更严谨的定义：
+\begin{definition}[连续]
+设函数$f(x)$在点$x_0$处有定义，若$\lim_{x \to x_0} f(x) = f(x_0)$，则称函数$f(x)$在点$x_0$处连续。若函数$f(x)$在区间$I$内的每一个点都连续，则称函数$f(x)$在区间$I$内连续。
+\end{definition}
+
+如果函数在某点处不满足上述条件，则称函数在该点处不连续。函数的不连续点称为间断点。间断点有以下几种类型：
+\begin{enumerate}
+\item 可去间断点：函数在该点处没有定义，或者函数在该点处的值不等于极限值，但函数在该点处的极限存在。比方说函数$f(x) = \sin x / x$在点$x_0 = 0$处没有定义，但$\lim_{x \to 0} f(x) = 1$，所以点$x_0 = 0$是函数$f(x)$的可去间断点。
+\item 跳跃间断点：函数在该点处的左极限和右极限都存在，但不相等。比方说函数
+\begin{equation}
+f(x) = \begin{cases} 1, & x > 0 \\
+0, & x \le 0 \end{cases}
+\end{equation}
+在点$x_0 = 0$处的左极限为$\lim_{x \to 0^-} f(x) = 0$，右极限为$\lim_{x \to 0^+} f(x) = 1$，所以点$x_0 = 0$是函数$f(x)$的跳跃间断点。
+\item 无穷间断点：函数在该点处的左极限或右极限不存在。比方说函数$f(x) = 1/x$在点$x_0 = 0$处的左极限为$\lim_{x \to 0^-} f(x) = -\infty$，右极限为$\lim_{x \to 0^+} f(x) = +\infty$，所以点$x_0 = 0$是函数$f(x)$的无穷间断点。
+\item 振荡间断点：函数在该点处的左极限或右极限不存在，且函数在该点处的值在某个区间内振荡。比方说函数$f(x) = \sin(1/x)$在点$x_0 = 0$处的左极限和右极限都不存在，且函数在点$x_0 = 0$附近的值在区间$[-1, 1]$内振荡，所以点$x_0 = 0$是函数$f(x)$的振荡间断点。
+\end{enumerate}
+
+\subsection{导数和微分}
+
+\paragraph{导数} 高中时我们已经知道：对于函数$f(x)$，$f'(x_0)$表示函数$f(x)$在点$x_0$处的变化率，即函数$f(x)$在点$x_0$处的切线斜率，写成数学语言是：
+
+\begin{definition}[导数]
+对于函数$f(x)$，其在点$x_0$附近连续，如果存在极限：
+\begin{equation}\label{eq:derivative}
+f'(x_0) = \lim_{\Delta x \to 0} \frac{f(x_0 + \Delta x) - f(x_0)}{\Delta x}
+\end{equation}
+则称函数$f(x)$在点$x_0$处可导，且其导数为$f'(x_0)$。
+\end{definition}
+
+可导一定连续，但连续不一定可导。例如函数$f(x) = |x|$在点$x_0 = 0$处连续，但$\Delta x$从正数一侧趋近于0时，$\Delta y / \Delta x = 1$；$\Delta x$从负数一侧趋近于0时，$\Delta y / \Delta x = -1$。所以$\lim_{\Delta x \to 0} \Delta y / \Delta x$不存在。
+
+由导数的定义，我们很容易得到导函数的定义。
+\begin{definition}[导函数]
+对于函数$f(x)$，若其在一个区间$I = (a, b)$内的每一个点$x_0$都可导，则称函数$f(x)$在区间$I$内可导，也称该函数\textbf{光滑}。
+\end{definition}
+
+导数具有以下的运算性质（高中数学中已经学过）：
+\begin{enumerate}
+\item $(f(x) + g(x))' = f'(x) + g'(x)$
+\item $(f(x)g(x))' = f'(x)g(x) + f(x)g'(x)$
+\item $(f(x)/g(x))' = (f'(x)g(x) - f(x)g'(x)) / g^2(x)$
+\item $(f(g(x)))' = f'(g(x))g'(x)$
+\end{enumerate}
+
+另外，高中数学中的导函数表仍然成立，只是需要补充一些新的导函数。
+\begin{itemize}
+    \item $\arcsin x$的导数为$1/\sqrt{1 - x^2}$；
+    \item $\arccos x$的导数为$-1/\sqrt{1 - x^2}$；
+    \item $\arctan x$的导数为$1/(1 + x^2)$。
+\end{itemize}
+
+\paragraph{微分} 刚刚是通过“变化率”的视角来看待导数。接下来我们换一个视角看待这个问题。
+
+我们知道，半径为$r$的圆的面积为$S = \pi r^2$，那么当半径$r$发生微小变化$\Delta r$时，圆的面积会发生变化$\Delta S$，我们可以计算出：
+\begin{equation}
+\Delta S = \pi (r + \Delta r)^2 - \pi r^2 = 2\pi r \Delta r + \pi (\Delta r)^2
+\end{equation}
+我们知道，当$\Delta r < 1$时，$(\Delta r)^2 < < \Delta r$。由此，是否可以利用$2\pi r \Delta r$来估计这个增量呢？我们计算产生的相对误差$2\pi r \Delta r / 2\pi r \Delta r = \Delta r / (2r)$，当$\Delta r$非常小时，这个误差是可以忽略的。
+
+对于更一般的情形，我们有：
+\begin{definition}[微分]
+对于函数$y = f(x)$，若存在常数$A$，使得当$\Delta x \to 0$时，有：
+\begin{equation}
+\Delta y = f(x + \Delta x) - f(x) = A \Delta x + o(\Delta x)
+\end{equation}
+则称函数$y = f(x)$在点$x$处可微，且称
+\begin{equation}
+dy = A dx
+\end{equation}
+为函数$y = f(x)$在点$x$处的微分，其中$dx = \Delta x$，$dy = f(x + \Delta x) - f(x)$。
+\end{definition}
+从定义看到，函数的微分有两个特点：微分一定是个关于$\Delta x$的线性函数；微分与实际变化量的差值是一个高阶无穷小量$o(\Delta x)$。我们发现微分和导数之间有着密切的联系。事实上，下列定理成立：
+\begin{theorem}[微分与导数的关系]
+函数$y = f(x)$在点$x_0$处可微的充分必要条件是函数$y = f(x)$在点$x_0$处可导，且有：
+\begin{equation}
+dy = f'(x_0) dx
+\end{equation}
+\end{theorem}
+
+由此可得，实际上导数也可以写成微分的商的形式，即
+\begin{equation}
+f'(x_0) = \frac{dy}{dx}
+\end{equation}
+故而导数也叫做微商。
+
+对于常用函数的微分，我们可以使用其导数乘上$dx$来计算，例如$d(x^n) = nx^{n-1} dx$。
+
+利用微分，我们可以简化计算。例如计算$1.001^{3}$，我们可以令$x = 1$，$\Delta x = 0.001$，$y = x^3$，则$dy = 3x^2 dx = 3 \cdot 1^2 \cdot 0.001 = 0.003$，所以$1.001^3 \approx 1 + 0.003 = 1.003$，和精确值1.003003相差极小。
+
+\paragraph{一阶微分的形式不变性} 设$y = f(u)$，$u = g(x)$，则$y = f(g(x))$。我们知道$y' = f'(g(x)) g'(x)$，写成微分的形式就是$dy =  f'(g(x)) g'(x) dx$。
+
+我们发现，恰好有$du = g'(x) dx$，所以$dy = f'(u) du$。
+
+这个结论是一般的，所以具有普适性，被称为\textbf{一阶微分的形式不变性}。它告诉我们，我们只要拿到一个函数$y = f(u)$，就可以直接对$u$求微分，而不需要去管$u$是如何定义的。这也说明了微分的运算要比导数的运算更优越。
+
+利用形式不变性、导数和微分的关系，我们可以得到一些常用函数的微分公式：
+\begin{itemize}
+    \item 若$y = f(x)$，则$dx/dy = 1/f'(x)$。这恰好是反函数$x = f^{-1}(y)$的导数公式。
+    \item 若$x = f(t)$，$y = g(t)$，则$dy/dx = g'(t)/f'(t)$。这是参数方程的导数公式。
+\end{itemize}
+此外，函数的和、函数的积、函数的商的微分公式也可以由导数的运算性质直接得到：
+\begin{itemize}
+    \item $d(u+v) = du + dv$；
+    \item $d(uv) = u dv + v du$；
+    \item $d(u/v) = (v du - u dv)/v^2$。
+\end{itemize}
+
+\paragraph{高阶导数和高阶微分} 如果一个函数，其导函数仍然可导，则称该函数可导两次，记作$f''(x)$，称为函数$f(x)$的二阶导数。以此类推，我们可以定义函数的$n$阶导数，记作$f^{(n)}(x)$。有$n$阶导数的函数称为$n$阶可导函数，也称它$n$阶光滑。如果一个函数无穷阶可导，则称它无穷阶光滑。
+
+同理，对于一个函数，其微分仍然可微，则称该函数可微两次，记作$d^2y$，称为函数$y = f(x)$的二阶微分。以此类推，我们可以定义函数的$n$阶微分，记作$d^ny$。
+
+高阶微分不具有形式不变性。例如，$y = f(u)$，$u = g(x)$，则$y = f(g(x))$。我们知道$dy = f'(g(x)) dg = f'(g(x)) g'(x) dx$。对两边求微分，得到：
+\begin{equation}
+d^2y = d(f'(g(x)) g'(x) dx) = d(f'(g(x)) g'(x)) dx + f'(g(x)) g'(x) d^2x
+\end{equation}
+发现多了一项，所以高阶微分不具有形式不变性。
+
+\paragraph{利用导数研究函数} 导数研究了函数的变化率，因此可以利用导数来研究函数的单调性、极值、凹凸性等性质。单调性和极值的讨论在高中已经学过，我们这里仅讲述凹凸性。
+
+\begin{definition}[凸函数]
+设函数$f(x)$在区间$I$上有定义，若对任意$x_1, x_2 \in I$，有：
+\begin{equation}
+f(\lambda x_1 + (1 - \lambda) x_2) \le \lambda f(x_1) + (1 - \lambda) f(x_2), \quad \forall \lambda \in [0, 1]
+\end{equation}
+则称函数$f(x)$在区间$I$上是凸函数。
+\end{definition}
+
+反转上述式子中的不等号，就可以得到凹函数的定义。
+
+容易证明，以下定理成立：
+\begin{theorem}[凸函数的充要条件]
+设函数$f(x)$在区间$I$上有定义，且$f(x)$是凸函数当且仅当$f''(x)$存在，且$f''(x) \ge 0$。
+\end{theorem}
+将上述式子中的不等号反转，就可以得到凹函数的充要条件。
+
+\subsection{积分}
+\paragraph{不定积分} 我们知道，加法的逆运算是减法，乘法的逆运算是除法，指数运算的逆运算是对数运算。微分运算有没有自己的逆运算？答案是有的。
+\begin{definition}[原函数]
+设函数$f(x)$在区间$I$上有定义，若存在函数$F(x)$，使得$F'(x) = f(x)$，则称$F(x)$为$f(x)$的一个原函数，记作：
+\begin{equation}
+d F(x) = f(x) dx
+\end{equation}
+\end{definition}
+
+容易得知，对于多数函数而言，其原函数并不是唯一的。因为如果$F(x)$是$f(x)$的一个原函数，则$F(x) + C$也是$f(x)$的一个原函数，其中$C$是任意常数。于是我们有：
+\begin{definition}[不定积分]
+设函数$f(x)$在区间$I$上存在原函数，那么所有原函数的集合称为$f(x)$的不定积分，记作：
+\begin{equation}
+\int f(x) dx = F(x) + C
+\end{equation}
+\end{definition}
+因此，在相差一个常数的意义下，不定积分是微分运算的逆运算。
+
+对应微分运算表，我们可以得到不定积分运算表：
+\begin{multicols}{2}
+    \begin{itemize}
+        \item $\int c dx = cx + C$，其中$c$是常数；
+        \item $\int x^n dx = \frac{x^{n+1}}{n+1} + C$，其中$n \neq -1$；
+        \item $\int \frac{1}{x} dx = \ln |x| + C$；
+        \item $\int e^x dx = e^x + C$；
+        \item $\int a^x dx = \frac{a^x}{\ln a} + C$，其中$a > 0, a \neq 1$；
+        \item $\int \sin x dx = -\cos x + C$；
+        \item $\int dx/\cos^2 x = \tan x + C$；
+        \item $\int dx/(1 + x^2) = \arctan x + C$；
+        \item $\int dx/\sqrt{1 - x^2} = \arcsin x + C$。
+    \end{itemize}
+\end{multicols}
+
+对应一阶微分的形式不变性$f'(g(x)) g'(x) dx = f'(u) du$，我们可以得到不定积分的换元公式：
+\begin{equation}
+\int f'(g(x)) g'(x) dx = \int f'(u) du
+\end{equation}
+
+对应一阶微分的运算律（主要是和、积的微分公式），我们可以得到不定积分的线性性质：
+\begin{itemize}
+    \item $\int (f(x) + g(x)) dx = \int f(x) dx + \int g(x) dx$；
+    \item $\int c f(x) dx = c \int f(x) dx$，其中$c$是常数。
+\end{itemize}
+
+对应函数的积的微分$d(uv) = u dv + v du$，我们可以得到不定积分的分部积分公式：
+\begin{equation}
+\int u dv = uv - \int v du
+\end{equation}
+
+\paragraph{定积分}
+
+在数学中对定积分的定义比不定积分严格得多，且来源和不定积分也不同。人们一开始认识到定积分，是用它来计算面积：
+\begin{definition}[定积分]
+设函数$f(x)$在区间$[a, b]$上有定义，则称由x轴、直线$x = a$、直线$x = b$和曲线$y = f(x)$所围成的图形的面积为函数$f(x)$在区间$[a, b]$上的定积分，记作$\int_a^b f(x) dx$。
+\end{definition}
+
+可以由以下手段判断一个函数是否可积。
+\begin{theorem}[定积分的存在性（Lebesgue定理）]
+设函数$f(x)$在区间$[a, b]$上有定义，若函数间断点的测度为零（即函数间断点的个数有限，或者函数间断点的个数无限，但这些间断点的总长度为零），则函数$f(x)$在区间$[a, b]$上可积。
+\end{theorem}
+
+定积分的运算性质和不定积分类似，有线性性（可和、可数乘），也有区间可分性：
+\begin{equation}
+\int_a^b f(x) dx = \int_a^c f(x) dx + \int_c^b f(x) dx, \quad a < c < b
+\end{equation}
+类似的，可以使用换元法（需要注意积分上下限的变化）和分部积分法来计算定积分。
+
+牛顿和莱布尼茨发现了定积分和不定积分之间的关系，这就是著名的牛顿-莱布尼茨公式：
+\begin{theorem}[牛顿-莱布尼茨公式]
+设函数$f(x)$在区间$[a, b]$上连续，且$F(x)$是函数$f(x)$的一个原函数，则有：
+\begin{equation}
+\int_a^b f(x) dx = F(b) - F(a)
+\end{equation}
+\end{theorem}
+这是计算定积分的最重要的工具。所以，我们为了计算定积分，只需要找到被积函数的一个原函数，然后代入积分上下限即可。
+
+\paragraph{反常积分} 在实际问题中，我们经常会遇到一些函数在某些点上不连续，或者积分区间是无穷区间的情况。对于这些情况，我们可以使用反常积分来处理。
+\subparagraph{第一类反常积分}
+第一类反常积分指的是积分区间是无穷区间的情况。
+\begin{definition}[第一类反常积分]
+设函数$f(x)$在区间$[a, +\infty)$上有定义，若存在常数$I$，使得当$b \to +\infty$时，有：
+\begin{equation}
+\lim_{b \to +\infty} \int_a^b f(x) dx = I
+\end{equation}
+则称函数$f(x)$在区间$[a, +\infty)$上可积，或称$\int_a^{+\infty} f(x) dx$收敛。称$I$为函数$f(x)$在区间$[a, +\infty)$上的第一类反常积分，记作：
+\begin{equation}
+\int_a^{+\infty} f(x) dx = I
+\end{equation}
+如果不存在这样的常数，则称$\int_a^{+\infty} f(x) dx$发散。
+\end{definition}
+
+如果区间是$(-\infty, b]$，则可以类似地定义第一类反常积分。
+
+如果区间是$(-\infty, +\infty)$，第一类反常积分定义为$\int_{-\infty}^{+\infty} f(x) dx = \int_{-\infty}^{c} f(x) dx + \int_{c}^{+\infty} f(x) dx$，其中$c$是任意常数，且要求拆成的两个反常积分都收敛。
+
+我们不要将上下限都是无穷的第一类反常积分和柯西主值混淆。柯西主值是指$\lim_{a \to +\infty} \int_{-a}^{a} f(x) dx$，它要求积分的上下限以相同的速度趋于无穷大，这比第一类反常积分存在的要求要强得多。
+
+例如$f(x) = x$，根据定义，$\int_{-\infty}^{+\infty} x dx$显然发散，但是$\lim_{a \to +\infty} \int_{-a}^{a} x dx = \lim_{a \to +\infty} 0 = 0$，所以柯西主值存在。这说明，柯西主值的存在并不能说明第一类反常积分的存在。
+
+第一类反常积分收敛的充分必要条件是：
+\begin{theorem}[第一类反常积分的收敛性]
+设函数$f(x)$在区间$[a, +\infty)$上有定义，则函数$f(x)$在区间$[a, +\infty)$上可积当且仅当函数$F(b) = \int_a^b f(x) dx$在区间$[a, +\infty)$上有界。
+\end{theorem}
+
+第一类反常积分的计算也可以利用牛顿-莱布尼茨公式：
+\begin{equation}
+\int_a^{+\infty} f(x) dx = \lim_{b \to +\infty} \int_a^b f(x) dx = \lim_{b \to +\infty} (F(b) - F(a)) = \lim_{b \to +\infty} F(b) - F(a)
+\end{equation}
+
+\subparagraph{第二类反常积分}
+
+第二类反常积分指的是被积函数在积分区间的某些点上不连续的情况。
+\begin{definition}[第二类反常积分]
+设函数$f(x)$在区间$[a, b)$上有定义，且在点$b$处不连续，这样的$b$称为积分在区间$[a, b)$上的瑕点。若存在常数$I$，使得当$x \to b^-$时，有：
+\begin{equation}
+\lim_{x \to b^-} \int_a^x f(x) dx = I
+\end{equation}
+则称函数$f(x)$在区间$[a, b)$上可积，或称$\int_a^{b^-} f(x) dx$收敛。称$I$为函数$f(x)$在区间$[a, b)$上的第二类反常积分，记作：
+\begin{equation}
+\int_a^{b^-} f(x) dx = I
+\end{equation}
+如果不存在这样的常数，则称$\int_a^{b^-} f(x) dx$发散。
+\end{definition}
+也可以类似的定义其他情况下的第二类反常积分。
+
+如果瑕点出在区间中间（$a < c < b$），则可以将积分区间拆成两段，分别计算：
+\begin{equation}
+\int_a^{b^-} f(x) dx = \int_a^{c^-} f(x) dx + \int_{c^+}^{b^-} f(x) dx
+\end{equation}
+
+第二类反常积分收敛的充分必要条件是：
+\begin{theorem}[第二类反常积分的收敛性]
+设函数$f(x)$在区间$[a, b)$上有定义，且在点$b$处不连续，则函数$f(x)$在区间$[a, b)$上可积当且仅当函数$F(x) = \int_a^x f(x) dx$在区间$[a, b)$上有界。
+\end{theorem}
+
+计算第二类反常积分也可以利用牛顿-莱布尼茨公式：
+\begin{equation}
+\int_a^{b^-} f(x) dx = \lim_{x \to b^-} \int_a^x f(x) dx = \lim_{x \to b^-} (F(x) - F(a)) = \lim_{x \to b^-} F(x) - F(a)
+\end{equation}
+
+\subsection{多元函数的微分和积分}
+
+我们以二元函数为例，其他更多元函数的情况类似。
+
+\paragraph{累次极限} 首先依然需要定义这个“趋近”的概念。设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在极限：
+\begin{equation}
+\lim_{(x, y) \to (x_0, y_0)} f(x, y) = A
+\end{equation}
+则称函数$z = f(x, y)$在点$(x_0, y_0)$处有极限，记作$\lim_{(x, y) \to (x_0, y_0)} f(x, y) = A$。这被称作是“重极限”，因为它要求$(x, y)$以任意方式趋近于$(x_0, y_0)$，这是一个很弱的约束，所以处理重极限是非常困难的。
+
+为了简化问题，我们考虑一个更强的条件：可以先令$x \to x_0$，再令$y \to y_0$，如果极限存在，则称函数$z = f(x, y)$在点$(x_0, y_0)$处有累次极限，记作$\lim_{y \to y_0} \lim_{x \to x_0} f(x, y) = A$。类似地，也可以先令$y \to y_0$，再令$x \to x_0$，如果极限存在，则称函数$z = f(x, y)$在点$(x_0, y_0)$处有累次极限，记作$\lim_{x \to x_0} \lim_{y \to y_0} f(x, y) = A$。
+
+事实上，累次极限是我们之后定义偏导数和多元函数的微分的基础。
+
+\paragraph{偏导数} 
+
+设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在极限：
+\begin{equation}
+\frac{\partial z}{\partial x} = \lim_{\Delta x \to 0} \frac{f(x_0 + \Delta x, y_0) - f(x_0, y_0)}{\Delta x}
+\end{equation}
+则称函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏导数存在，记作$\partial z / \partial x$。类似地，可以定义函数$z = f(x, y)$在点$(x_0, y_0)$处对$y$的偏导数，记作$\partial z / \partial y$。
+
+显然，我们可以把不相干的自变量看成常数，于是多元函数求偏导就可以看成是一元函数求导数的推广了。
+
+有偏导数，自然就有偏微分。设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在常数$A$，使得当$\Delta x \to 0$时，有：
+\begin{equation}
+\Delta z = f(x_0 + \Delta x, y_0) - f(x_0, y_0) = A \Delta x + o(\Delta x)
+\end{equation}
+则称函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏微分存在，且称
+\begin{equation}
+\frac{\partial z}{\partial x} dx = A dx
+\end{equation}
+为函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏微分，其中$dx = \Delta x$，$\partial z / \partial x$是函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏导数。类似地，可以定义函数$z = f(x, y)$在点$(x_0, y_0)$处对$y$的偏微分，记作$\partial z / \partial y dy$。
+
+可以看出，多元函数的偏微分和偏导数之间也有着密切的联系。事实上，下列定理成立：
+\begin{theorem}[偏微分与偏导数的关系]
+函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏微分存在的充分必要条件是函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏导数存在，且有：
+\begin{equation}
+\frac{\partial z}{\partial x} dx = A dx
+\end{equation}
+\end{theorem}
+
+\paragraph{累次积分} 对于二元函数$z = f(x, y)$，我们可以定义累次积分。设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，则称：
+\begin{equation}
+\int_a^b \int_c^d f(x, y) dy dx
+\end{equation}
+为函数$z = f(x, y)$在矩形区域$D$上的累次积分。类似地，也可以定义$\int_c^d \int_a^b f(x, y) dx dy$。
+
+为了计算累次积分，我们需要先计算内层积分，再计算外层积分。可以利用牛顿-莱布尼茨公式来计算累次积分：
+\begin{equation}
+\int_a^b \int_c^d f(x, y) dy dx = \int_a^b (F(x, d) - F(x, c)) dx
+\end{equation}
+其中$F(x, y)$是函数$f(x, y)$对$y$的一个原函数。
+
+有时候直接计算累次积分困难，我们可以利用换元法来计算累次积分。设$x = g(u, v)$，$y = h(u, v)$，则有：
+\begin{equation}
+\int_a^b \int_c^d f(x, y) dy dx = \int_{u_1}^{u_2} \int_{v_1}^{v_2} f(g(u, v), h(u, v)) \left| \frac{\partial(x, y)}{\partial(u, v)} \right| du dv
+\end{equation}
+其中$\left| \frac{\partial(x, y)}{\partial(u, v)} \right|$是雅可比行列式，展开就是$\left| \frac{\partial x}{\partial u} \frac{\partial y}{\partial v} - \frac{\partial x}{\partial v} \frac{\partial y}{\partial u} \right|$。
+
+一个常见的换元方法是直角坐标转极坐标（例如椭圆），此时有$x = r \cos \theta$，$y = r \sin \theta$，则有：
+\begin{equation}
+\int_a^b \int_c^d f(x, y) dy dx = \int_{\theta_1}^{\theta_2} \int_{r_1}^{r_2} f(r \cos \theta, r \sin \theta) r dr d\theta
+\end{equation}
+
+\paragraph{重积分} 重积分和累次积分的来源不同，但殊途同归：对于二元函数，重积分的定义来自体积。设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，且函数$f(x, y)$在区域$D$上连续，则称：
+\begin{equation}
+\iint_D f(x, y) d\sigma
+\end{equation}
+为函数$z = f(x, y)$在矩形区域$D$上的重积分，其中$d\sigma$表示区域$D$上的面积元素。类似地，也可以定义三重积分、四重积分等。
+
+重积分不好计算，我们一般将其化成累次积分来计算。设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，且函数$f(x, y)$在区域$D$上连续，则有：
+\begin{equation}
+\iint_D f(x, y) d\sigma = \int_a^b \int_c^d f(x, y) dy dx = \int_c^d \int_a^b f(x, y) dx dy
+\end{equation}
+于是就可以利用刚刚的累次积分的计算方法来计算重积分。
+
+\section{简明线性代数}
+
+机器学习中的线性代数用途极为广泛，几乎所有的机器学习算法都离不开线性代数的知识。线性代数主要研究向量、矩阵、线性变换等内容。我们将从向量和矩阵的基本概念开始，同样更加重视运算而非理论。
+
+\subsection{从线性方程组到矩阵}
+
+考虑一个线性方程组：
+\begin{equation}
+\begin{cases}
+a_{11} x_1 + a_{12} x_2 + \cdots + a_{1n} x_n = b_1 \\
+a_{21} x_1 + a_{22} x_2 + \cdots + a_{2n} x_n = b_2 \\
+\vdots \\
+a_{m1} x_1 + a_{m2} x_2 + \cdots + a_{mn} x_n = b_m
+\end{cases}
+\end{equation}
+其中，$a_{ij}$是已知的系数，$b_i$是已知的常数，$x_j$是未知数。
+
+在高中的基础上，我们发现，方程组左侧都可以写成向量的内积，比如第一行可以写成$\mathbf{a}_1 \cdot \mathbf{x} = b_1$，之后的$m$行同理。于是这个方程组变成了：
+\begin{equation}
+\begin{cases}
+\mathbf{a}_1 \cdot \mathbf{x} = b_1 \\
+\mathbf{a}_2 \cdot \mathbf{x} = b_2 \\
+\vdots \\
+\mathbf{a}_m \cdot \mathbf{x} = b_m
+\end{cases}
+\end{equation}
+现在的问题是：能不能将这么多式子再组合在一起，成为一个式子呢？
+
+这就需要引入“矩阵”的概念了。我们不妨先不看这个方程组的$b_i$，只看左侧的系数$a_{ij}$，我们可以将这些系数写成一个矩阵：
+\begin{equation}
+A = \begin{bmatrix}
+a_{11} & a_{12} & \cdots & a_{1n} \\
+a_{21} & a_{22} & \cdots & a_{2n} \\
+\vdots & \vdots & \ddots & \vdots \\
+a_{m1} & a_{m2} & \cdots & a_{mn}
+\end{bmatrix}
+\end{equation}
+由此就可以得到矩阵的定义：一堆数，按一定的顺序排成一个矩形阵列，这个矩形阵列就叫做矩阵。矩阵的大小是$m \times n$，即有$m$行$n$列。
+
+而未知数$x_j$、常数$b_i$也可以写成向量\footnote{在数学上，我们更喜欢写列向量，而不是行向量。}的形式：
+\begin{equation}
+\mathbf{x} = \begin{bmatrix}
+x_1 \\
+x_2 \\
+\vdots \\
+x_n
+\end{bmatrix}, \quad
+\mathbf{b} = \begin{bmatrix}
+b_1 \\
+b_2 \\
+\vdots \\
+b_m
+\end{bmatrix}
+\end{equation}
+
+于是这个方程组是不是可以用更简单的形式来表示呢？答案是肯定的。我们可以将这个方程组写成矩阵的形式：
+\begin{equation}\label{eq:matrix_form}
+A \mathbf{x} = \mathbf{b}
+\end{equation}
+
+这说明，线性方程组可以通过矩阵的形式表示。我们把上述$A$叫做这个方程组的\textbf{系数矩阵}。可以把$\mathbf{b}$拼在$A$的右边，可以得到一个新的矩阵$[A | \mathbf{b}]$，这个矩阵叫做这个方程组的\textbf{增广矩阵}。
+
+\subsection{矩阵的运算}
+
+作为“一大堆数的排列”，我们自然希望矩阵能够参与运算。为了简单起见，矩阵可以表示为$[a_{ij}]$，其中$a_{ij}$表示矩阵中第$i$行第$j$列的元素。
+
+矩阵的加法（减法）和数乘是最容易理解的运算。设$A = [a_{ij}]$，$B = [b_{ij}]$是两个形状一致的矩阵，则有：
+\begin{itemize}
+    \item $A + B = [a_{ij} + b_{ij}]$
+    \item $A - B = [a_{ij} - b_{ij}]$
+    \item $c A = [c a_{ij}]$，其中$c$是常数。
+\end{itemize}
+显然矩阵的加法（减法）和数乘满足交换律、结合律、分配律等运算律。
+
+矩阵的转置是将矩阵的行和列互换。设$A = [a_{ij}]$是一个$m \times n$的矩阵，则$A^\top = [a_{ji}]$是一个$n \times m$的矩阵。
+
+这两个其实还算简单。至于矩阵的乘积，就略微超出我们的认识了。为此，我们先定义矩阵和向量的乘法。
+
+受到\cref{eq:matrix_form}的启发，我们希望矩阵$A$和向量$\mathbf{x}$的乘积$A \mathbf{x}$能够表示线性方程组的左侧，结果的形状和$\mathbf{b}$一致。于是我们希望$A \mathbf{x}$是一个$m \times 1$的向量，其第$i$个元素为：
+\begin{equation}
+(A \mathbf{x})_i = a_{i1} x_1 + a_{i2} x_2 + \cdots + a_{in} x_n = \sum_{j=1}^{n} a_{ij} x_j
+\end{equation}
+
+于是我们把这个定义成矩阵和向量的乘法。
+\begin{definition}[矩阵和向量的乘法]
+设$A = [a_{ij}]$是一个$m \times n$的矩阵，$\mathbf{x} = [x_j]$是一个$n \times 1$的向量，则$A \mathbf{x}$是一个$m \times 1$的向量，其第$i$个元素为：
+\begin{equation}
+(A \mathbf{x})_i = \sum_{j=1}^{n} a_{ij} x_j
+\end{equation}
+\end{definition}
+我们发现，矩阵和向量相乘，必须满足：矩阵的列数等于向量的行数。否则无法进行乘法运算。
+
+那么怎么把这个定义推广到矩阵和矩阵的乘法呢？我们是不是可以再写出这样的“方程组组”：
+\begin{equation}
+\begin{cases}
+A \mathbf{x}_1 = \mathbf{b}_1 \\
+A \mathbf{x}_2 = \mathbf{b}_2 \\
+\vdots \\
+A \mathbf{x}_k = \mathbf{b}_k
+\end{cases}
+\end{equation}
+用类似的手段进行压缩，就可以得到：
+\begin{equation}
+AX = B
+\end{equation}
+这里的$X$和$B$都是矩阵。$X$是k个$\mathbf{x}$拼在一起的，其中的每一个向量都是列向量，所以其形状是$n \times k$。$B$是k个$\mathbf{b}$拼在一起的，其中的每一个向量都是列向量，所以其形状是$m \times k$。
+
+这说明，一个$m \times n$的矩阵$A$和一个$n \times k$的矩阵$X$相乘，得到一个$m \times k$的矩阵$B$！
+
+那么其中的数值是怎么计算的呢？我们希望$B$的第$i$行第$j$列的元素$b_{ij}$，就是矩阵$A$的第$i$行和矩阵$X$的第$j$列的内积。于是我们就有：
+\begin{definition}[矩阵和矩阵的乘法]
+设$A = [a_{ij}]$是一个$m \times n$的矩阵，$X = [x_{jk}]$是一个$n \times k$的矩阵，则$AX$是一个$m \times k$的矩阵，其第$i$行第$j$列的元素为：
+\begin{equation}
+(AX)_{ij} = \sum_{l=1}^{n} a_{il} x_{lj}
+\end{equation}
+\end{definition}
+这说明，矩阵和矩阵相乘，必须满足：第一个矩阵的列数等于第二个矩阵的行数。否则无法进行乘法运算。
+
+因为向量可以看作是矩阵的一种特殊情况（行数为1，或列数为1），所以矩阵和向量的乘法是矩阵和矩阵的乘法的一种特殊情况。同理，向量和向量的乘法也可以看作是矩阵和矩阵的乘法的一种特殊情况。所以以下两个运算结果成立：
+\begin{equation}
+\begin{bmatrix}
+a_1 & a_2 & \cdots & a_n
+\end{bmatrix}
+\begin{bmatrix}
+x_1 \\ x_2 \\ \vdots \\ x_n
+\end{bmatrix} = \sum_{i=1}^{n} a_i x_i, \quad
+\begin{bmatrix}
+x_1 \\ x_2 \\ \vdots \\ x_n
+\end{bmatrix}
+\begin{bmatrix}
+a_1 & a_2 & \cdots & a_n
+\end{bmatrix} = \begin{bmatrix}
+x_1 a_1 & x_1 a_2 & \cdots & x_1 a_n \\
+x_2 a_1 & x_2 a_2 & \cdots & x_2 a_n \\
+\vdots & \vdots & \ddots & \vdots \\
+x_n a_1 & x_n a_2 & \cdots & x_n a_n
+\end{bmatrix}
+\end{equation}
+
+另，容易证明，矩阵的乘法满足结合律和分配律，但不满足交换律。也就是说，$A(BC) = (AB)C$，$A(B + C) = AB + AC$，但是$AB = BA$不一定成立。
+
+此外，我们还有矩阵乘法的转置定律：$(AB)^\top = B^\top A^\top$。                                                                    
+
+我们知道，对于任何实数，都有：$a \times 0 = 0$，$a \times 1 = a$。类似地，对于矩阵，我们有没有对应的矩阵呢？答案是有的。我们称为零矩阵和单位矩阵。
+\begin{definition}[零矩阵]
+设$A = [a_{ij}]$是一个$m \times n$的矩阵，若$a_{ij} = 0$，则称$A$为零矩阵，记作$0_{m \times n}$。
+\end{definition}
+\begin{definition}[单位矩阵]
+设$A = [a_{ij}]$是一个$n \times n$的矩阵，若$a_{ij} = 1$，当$i = j$时；$a_{ij} = 0$，当$i \neq j$时，则称$A$为单位矩阵，记作$I_n$。这条对角线也被称为主对角线。
+\end{definition}
+
+矩阵乘法的实际意义是对这个向量进行线性变换，包括伸缩、旋转、平移等。零矩阵表示将所有向量映射到原点，单位矩阵表示将所有向量映射到自身。
+
+\subsection{矩阵的行列式、秩、逆矩阵}
+
+我们再把目光回到方程组 \(A \mathbf{x} = \mathbf{b}\) 上。
+
+高中的时候，我们就已经知道：一个线性方程组，它要么有唯一解，要么无解，要么有无穷多解。
+模仿一元方程组 \(ax = b\)，如果 \(a \neq 0\)，方程有唯一解 \(x = a^{-1}b\)；如果 \(a = 0\)，方程要么无解，要么有无穷多解。放到矩阵方程里，我们自然要问：矩阵 \(A\) 的“非零”该怎样判断？那个 \(A^{-1}\) 又是什么，如何求出来？
+
+要回答这些问题，我们需要三件工具：行列式、秩和逆矩阵。
+
+\paragraph{行列式}
+
+既然一元方程里起决定作用的是系数 \(a\) 是否为零，对于方阵 \(A\)（即行数等于列数，否则无从谈“一个数的倒数”），我们也希望有一个数来刻画它是否“非零”。这个数就是行列式，记作 \(\det(A)\) 或 \(|A|\)。
+
+先从最简单的二、三阶开始。
+对于二阶方阵
+\[
+A = \begin{bmatrix}
+a & b \\ c & d
+\end{bmatrix},
+\]
+定义它的行列式为
+\[
+\det(A) = ad - bc .
+\]
+绝对值 \(|\det(A)|\) 恰好等于以向量 \((a,c)\) 和 \((b,d)\) 为边的平行四边形的面积。如果面积为 \(0\)，说明两个向量共线，它们的信息是重复的。类似地，三阶行列式的绝对值表示三个向量张成的平行六面体体积。一般地，\(n\) 阶行列式可以理解成 \(n\) 个 \(n\) 维向量张成的“超体积”。体积为零，意味着这些向量线性相关——至少有一个向量是其余向量的线性组合。
+
+更正式的递归定义是：
+\begin{definition}[行列式]
+设 \(A = [a_{ij}]\) 是一个 \(n \times n\) 方阵，\(n \ge 2\)。对于任意 \(i\)，定义 \(A_{ij}\) 为去掉第 \(i\) 行第 \(j\) 列的 \((n-1) \times (n-1)\) 子矩阵。则行列式定义为：
+\[
+\det(A) = \sum_{j=1}^{n} (-1)^{i+j} a_{ij} \det(A_{ij}) .
+\]
+如果矩阵不是方阵，则它没有行列式。
+\end{definition}
+
+不过我们更关心性质和计算。行列式有几个非常实用的运算性质：
+\begin{enumerate}
+    \item 交换两行（或两列），行列式变号。
+    \item 某一行（列）乘以常数 \(k\)，行列式也乘以 \(k\)。
+    \item 把一行的倍数加到另一行，行列式不变。
+    \item 上（下）三角矩阵（即主对角线下方/上方的元素全为零）的行列式等于主对角线元素的乘积。
+\end{enumerate}
+
+利用这些性质，通过矩阵的“行变换”我们可以把矩阵化成上三角形式，然后把主对角线元素相乘，就得到行列式。这让手算行列式容易很多。
+
+\begin{mdframed}[frametitle=例：计算行列式]
+计算
+\[
+\begin{vmatrix}
+1 & 2 & 3 \\
+2 & 5 & 7 \\
+0 & 1 & -1
+\end{vmatrix},
+\]
+将第一行乘以 \(-2\) 加到第二行，变成
+\[
+\begin{vmatrix}
+1 & 2 & 3 \\
+0 & 1 & 1 \\
+0 & 1 & -1
+\end{vmatrix},
+\]
+再将第二行乘以 \(-1\) 加到第三行，得到上三角
+\[
+\begin{vmatrix}
+1 & 2 & 3 \\
+0 & 1 & 1 \\
+0 & 0 & -2
+\end{vmatrix},
+\]
+于是行列式值为 \(1 \times 1 \times (-2) = -2\)。
+\end{mdframed}
+
+最重要的是：方阵 \(A\) 可逆 的充分必要条件是 \(\det(A) \neq 0\)。此时方程组 \(A\mathbf{x} = \mathbf{b}\) 对任意 \(\mathbf{b}\) 都有唯一解。若 \(\det(A) = 0\)，就像一元方程里 \(a=0\)，解要么不存在，要么有无穷多。
+
+\paragraph{秩}
+
+并不是所有矩阵都是方阵，而且即使方阵也可能行列式为 \(0\)。我们还需要一个更普遍的工具来判断方程组解的情况，这就是矩阵的秩。
+
+先理解“线性无关”。一组向量中，如果任何一个向量都不能写成其余向量的线性组合，这组向量就是线性无关的，否则称为线性相关。矩阵的秩，记作 \(\operatorname{rank}(A)\)，定义为它最大线性无关的行数（也等于最大线性无关的列数）。直觉上，秩告诉我们在矩阵中有多少行（或列）是“真正独立”、“能提供新信息”的。
+
+对线性方程组 \(A\mathbf{x} = \mathbf{b}\)（\(A\) 为 \(m\times n\) 矩阵），考虑增广矩阵 \([A \mid \mathbf{b}]\)，解的情况完全由秩决定：
+\begin{enumerate}
+    \item 若 \(\operatorname{rank}(A) = \operatorname{rank}([A \mid \mathbf{b}]) = n\)（未知数个数），方程组有唯一解。
+    \item 若 \(\operatorname{rank}(A) = \operatorname{rank}([A \mid \mathbf{b}]) < n\)，方程组有无穷多解（自由变量个数为 \(n - \operatorname{rank}(A)\)）。
+    \item 若 \(\operatorname{rank}(A) \neq \operatorname{rank}([A \mid \mathbf{b}])\)，方程组无解。
+\end{enumerate}
+
+秩怎么求？同样可以通过行变换把矩阵化成“行阶梯形”，数一数非零行的数目即可。这是计算机程序中常用的方法。
+
+在机器学习中，秩有直接的应用。例如，线性回归的设计矩阵 \(X\)（每一行是一个样本，每一列是一个特征）通常列数等于特征个数 \(p\)。如果某些特征近似是其他特征的线性组合（称为共线性），那么 \(\operatorname{rank}(X) < p\)，此时 \(X^\top X\) 的行列式为 \(0\)，无法直接求逆来得到正规方程的唯一解——这也是为什么有时必须使用正则化的原因。
+
+\paragraph{逆矩阵}
+
+现在回到可逆的方阵。对于 \(n \times n\) 矩阵 \(A\)，如果存在矩阵 \(B\) 使得
+\[
+AB = BA = I_n,
+\]
+就称 \(A\) 可逆，\(B\) 称为 \(A\) 的逆矩阵，记作 \(A^{-1}\)。这里 \(I_n\) 是 \(n\) 阶单位矩阵。逆矩阵就像数的倒数：\(a^{-1}a = 1\)。
+
+只有方阵才有逆矩阵，而且可逆的充分必要条件是 \(\det(A) \neq 0\)。此时，解方程 \(A\mathbf{x} = \mathbf{b}\) 就可以直接写成
+\[
+\mathbf{x} = A^{-1} \mathbf{b},
+\]
+这和一维的 \(x = a^{-1}b\) 完全类似。
+
+怎么计算逆矩阵？有两种常见方法：
+\begin{enumerate}
+    \item 伴随矩阵法（对小矩阵方便）。定义余子式组成的伴随矩阵 \(\operatorname{adj}(A)\)，则有
+    \[
+    A^{-1} = \frac{1}{\det(A)} \operatorname{adj}(A).
+    \]
+    对二阶矩阵尤其简单：
+    \[
+    \begin{bmatrix} a & b \\ c & d \end{bmatrix}^{-1} = \frac{1}{ad - bc} \begin{bmatrix} d & -b \\ -c & a \end{bmatrix}.
+    \]
+    \item 初等行变换法（大小通吃）。构造增广矩阵 \([A \mid I]\)，对它施行行变换，将左边变成单位矩阵的同时，右边就自动变成了 \(A^{-1}\)，即
+    \[
+    [A \mid I] \;\xrightarrow{\text{行变换}}\; [I \mid A^{-1}].
+    \]
+\end{enumerate}
+
+逆矩阵的运算性质也与倒数相似：
+\begin{itemize}
+    \item \((A^{-1})^{-1} = A\)，
+    \item \((kA)^{-1} = \frac{1}{k} A^{-1}\) （\(k \neq 0\)），
+    \item \((AB)^{-1} = B^{-1} A^{-1}\)（注意顺序交换），
+    \item \((A^\top)^{-1} = (A^{-1})^\top\)。
+\end{itemize}
+
+在机器学习里，逆矩阵最经典的露面就是最小二乘法的正规方程。当我们用线性模型 \(\hat{\mathbf{y}} = X \mathbf{w}\) 拟合目标 \(\mathbf{y}\) 时，在 \(X^\top X\) 可逆的前提下，最优权重向量为：
+\[
+\mathbf{w} = (X^\top X)^{-1} X^\top \mathbf{y}.
+\]
+这里矩阵求逆将问题从“解方程”一步到位。当特征数很多时，直接求逆计算量很大，实际计算中通常采用更高效的数值方法（如共轭梯度法），但其数学本质依然源于逆矩阵的思想。
+
+\subsection{特征值与特征向量}
+
+我们已经知道，一个矩阵左乘一个向量，得到的结果是另一个向量。这个过程可以看作是对向量进行线性变换。对于大多数向量来说，这个变换会改变它们的方向和长度。一个自然的问题是：是否存在某些“特别”的向量，在变换之后方向保持不变，只是被拉长或缩短了？这便引出了特征值与特征向量的概念。
+
+\begin{definition}[特征值与特征向量]
+    设 \(A\) 是一个 \(n \times n\) 的方阵。如果存在一个非零向量 \(\mathbf{v} \in \mathbb{R}^n\) 和一个数 \(\lambda \in \mathbb{C}\)，使得
+    \[
+    A\mathbf{v} = \lambda \mathbf{v},
+    \]
+    则称 \(\lambda\) 为矩阵 \(A\) 的一个\textbf{特征值}，\(\mathbf{v}\) 为对应于 \(\lambda\) 的\textbf{特征向量}。
+\end{definition}
+
+从几何上看，矩阵 \(A\) 作用在特征向量 \(\mathbf{v}\) 上，效果仅仅是将其长度缩放 \(\lambda\) 倍（若 \(\lambda\) 为负，则方向反转）。其它向量通常会被旋转，而特征向量则始终保持在同一根直线上。
+
+那么现在的问题就变成怎样计算特征向量。我们可以将定义式改写：
+\[
+(A - \lambda I)\mathbf{v} = \mathbf{0},
+\]
+其中 \(I\) 为单位矩阵。这是一个关于 \(\mathbf{v}\) 的齐次线性方程组。我们希望它有非零解，根据之前的知识，这要求系数矩阵 \(A - \lambda I\) 的行列式为 \(0\)：
+\[
+\det(A - \lambda I) = 0.
+\]
+这个方程称为矩阵 \(A\) 的\textbf{特征方程}，左侧是关于 \(\lambda\) 的 \(n\) 次多项式，叫作\textbf{特征多项式}。求解特征方程可以得到全部特征值（可能有重根，也可能是复数，但在机器学习中我们通常处理实对称矩阵，其特征值都是实数）。
+
+得到特征值 \(\lambda\) 后，代入 \((A - \lambda I)\mathbf{v} = \mathbf{0}\)，解出的非零解向量就是对应的特征向量。
+
+\begin{mdframed}[frametitle=例：求特征值与特征向量] 
+设 \(A = \begin{bmatrix} 4 & 1 \\ 2 & 3 \end{bmatrix}\)。求特征值：
+\[
+\det\begin{pmatrix} 4-\lambda & 1 \\ 2 & 3-\lambda \end{pmatrix} = (4-\lambda)(3-\lambda) - 2 = \lambda^2 - 7\lambda + 10 = 0,
+\]
+解得 \(\lambda_1 = 5\)，\(\lambda_2 = 2\)。
+
+对 \(\lambda_1 = 5\)，解 \((A - 5I)\mathbf{v} = \mathbf{0}\)：
+\[
+\begin{bmatrix} -1 & 1 \\ 2 & -2 \end{bmatrix} \begin{bmatrix} v_1 \\ v_2 \end{bmatrix} = \begin{bmatrix} 0 \\ 0 \end{bmatrix} \;\Rightarrow\; v_1 = v_2,
+\]
+可取特征向量 \(\mathbf{v}_1 = \begin{bmatrix}1 \\ 1\end{bmatrix}\)。
+
+对 \(\lambda_2 = 2\)，解 \((A - 2I)\mathbf{v} = \mathbf{0}\)：
+\[
+\begin{bmatrix} 2 & 1 \\ 2 & 1 \end{bmatrix} \begin{bmatrix} v_1 \\ v_2 \end{bmatrix} = \begin{bmatrix} 0 \\ 0 \end{bmatrix} \;\Rightarrow\; 2v_1 + v_2 = 0,
+\]
+可取 \(\mathbf{v}_2 = \begin{bmatrix}1 \\ -2\end{bmatrix}\)。
+
+验证：\(A\mathbf{v}_1 = \begin{bmatrix}5\\5\end{bmatrix} = 5\mathbf{v}_1\)，\(A\mathbf{v}_2 = \begin{bmatrix}2\\-4\end{bmatrix}=2\mathbf{v}_2\)。
+\end{mdframed}
+
+特征值有以下重要性质：
+\begin{itemize}
+    \item 所有特征值之和等于矩阵的迹（主对角线元素之和）：\(\sum \lambda_i = \operatorname{tr}(A)\)。
+    \item 所有特征值之积等于矩阵的行列式：\(\prod \lambda_i = \det(A)\)。
+\end{itemize}
+这两个性质可以用来校验计算结果。
+
+\subsection{矩阵的特征值分解}
+
+如果 \(n \times n\) 的矩阵 \(A\) 可以找到 \(n\) 个线性无关的特征向量（这在实对称矩阵中一定成立），把它们作为列向量排成一个矩阵 \(V = [\mathbf{v}_1 \;\mathbf{v}_2 \;\cdots\; \mathbf{v}_n]\)，则根据定义
+\[
+A V = A [\mathbf{v}_1 \;\cdots\; \mathbf{v}_n] = [\lambda_1\mathbf{v}_1 \;\cdots\; \lambda_n\mathbf{v}_n] = V \Lambda,
+\]
+其中 \(\Lambda = \operatorname{diag}(\lambda_1, \lambda_2, \dots, \lambda_n)\) 是对角矩阵。于是
+\[
+A = V \Lambda V^{-1}.
+\]
+这就是\textbf{矩阵的特征值分解}，得到的矩阵和原来的矩阵相似，有相同的特征值；且对角矩阵使得运算变得极为容易。
+
+在机器学习中，我们经常遇到\textbf{实对称矩阵}，这样的矩阵满足$A^\top = A$，例如协方差矩阵 \(X^\top X\)。对于实对称矩阵，有两个非常优美的结论：
+\begin{itemize}
+    \item 它的所有特征值都是实数；
+    \item 它一定可以被正交对角化：存在正交矩阵 \(Q\)（即 \(Q^{-1} = Q^\top\)），使得
+    \[
+    A = Q \Lambda Q^\top = \sum_{i=1}^n \lambda_i \mathbf{q}_i \mathbf{q}_i^\top,
+    \]
+    其中 \(\mathbf{q}_i\) 是 \(Q\) 的列向量，彼此正交且单位化。
+\end{itemize}
+这意味着对称矩阵的作用就是将空间沿相互正交的方向独立地伸缩 \(\lambda_i\) 倍，既简单又易于计算。
+
+一旦实现了对角化，计算 \(A^k\) 就变得极其简单：
+\[
+A^k = V \Lambda^k V^{-1},
+\]
+而 \(\Lambda^k = \operatorname{diag}(\lambda_1^k, \dots, \lambda_n^k)\)。这在马尔可夫链、线性动力系统中有重要作用。
+
+\paragraph{机器学习中的典型应用：主成分分析（PCA）}
+
+降维是机器学习中非常重要的一项预处理技术。给定数据中心化后的特征矩阵 \(X\)（\(m\) 个样本，\(n\) 个特征），其协方差矩阵为 \(C = \frac{1}{m-1} X^\top X\)，它是一个实对称矩阵。对 \(C\) 进行特征值分解：
+\[
+C = Q \Lambda Q^\top .
+\]
+将特征值从大到小排序，\(\lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_n\)，对应的特征向量 \(\mathbf{q}_1, \mathbf{q}_2, \dots\) 称为主成分方向。最大的特征值对应数据方差最大的方向，也就是信息量最大的方向。若我们想把数据降到 \(k\) 维，只需保留前 \(k\) 个特征向量，构成矩阵 \(Q_k\)，则降维后的数据为 \(X_k = X Q_k\)。新特征之间互不相关，并且尽可能保留了原始数据的变异性。
+
+\subsection{奇异值分解（SVD）}
+
+特征值分解要求矩阵是方阵，且需要可对角化。然而现实中的矩阵常常是长方形的（样本数不等于特征数），或者我们不想受限于方阵的条件。有没有一种更普遍、对任意矩阵都成立的分解方式？有的，这就是\textbf{奇异值分解}（Singular Value Decomposition，SVD）。
+
+\begin{theorem}[奇异值分解]
+    设 \(A\) 为任意 \(m \times n\) 实矩阵，则存在分解
+    \[
+    A = U \Sigma V^\top,
+    \]
+    其中
+    \begin{itemize}
+        \item \(U\) 是 \(m \times m\) 的正交矩阵（列称为左奇异向量）；
+        \item \(V\) 是 \(n \times n\) 的正交矩阵（列称为右奇异向量）；
+        \item \(\Sigma\) 是 \(m \times n\) 的对角矩阵，主对角线上的元素 \(\sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_r > 0\)（\(r \le \min(m,n)\)）称为\textbf{奇异值}，其余位置全为零。
+    \end{itemize}
+\end{theorem}
+
+用几何和变换的眼光看，矩阵 \(A\) 将一个 \(n\) 维空间中的单位球映射到 \(m\) 维空间中的一个超椭球。右奇异向量 \(V\) 的列是原始空间中单位球的相互正交的半轴方向，左奇异向量 \(U\) 的列是像空间中椭球的相互正交的半轴方向，奇异值 \(\sigma_i\) 恰好是这些半轴的长度。SVD 完美地揭示了一个矩阵的几何作用：旋转（\(V^\top\)）→ 拉伸（\(\Sigma\)）→ 再旋转（\(U\)）。
+
+SVD的计算过程非常复杂：
+\begin{enumerate}
+    \item 计算方阵 \(A^\top A\)（\(n\times n\) ）和 \(A A^\top\)（\(m\times m\)）。二者都是半正定对称矩阵。
+    \item \(A^\top A\) 的特征值（非负）为 \(\sigma_i^2\)，将这些特征值开方就得到奇异值 \(\sigma_i\)。注意取正平方根并按降序排列。
+    \item \(V\) 的列是 \(A^\top A\) 的特征向量（对应 \(\sigma_i^2\)），规范化为单位向量。
+    \item 对于正奇异值 \(\sigma_i > 0\)，左奇异向量可由 \(\mathbf{u}_i = \frac{1}{\sigma_i} A \mathbf{v}_i\) 得到；若 \(m > r\)，还需找齐 \(U\) 剩下的零空间标准正交基。
+\end{enumerate}
+
+\begin{mdframed}[frametitle=例：奇异值分解]
+\(A = \begin{bmatrix} 1 & 1 \\ 0 & 1 \\ 0 & 0 \end{bmatrix}\)。先求 \(A^\top A = \begin{bmatrix} 1 & 1 \\ 1 & 2 \end{bmatrix}\)。其特征方程为 \((1-\lambda)(2-\lambda)-1 = \lambda^2 - 3\lambda + 1 = 0\)，特征值 \(\lambda_1 = \frac{3+\sqrt{5}}{2} \approx 2.618\)，\(\lambda_2 = \frac{3-\sqrt{5}}{2} \approx 0.382\)。奇异值 \(\sigma_1 = \sqrt{\lambda_1} \approx 1.618\)，\(\sigma_2 = \sqrt{\lambda_2} \approx 0.618\)。进而求出 \(V\) 的特征向量，再通过 \(A\mathbf{v}_i\) 得到 \(U\) 的前两列，最后一列补一个正交向量即可。
+\end{mdframed}
+
+奇异值分解在计算机科学中有广泛应用，尤其在数据降维、压缩和推荐系统中。一个重要的性质是：奇异值分解提供了矩阵的最优低秩近似。
+
+将 \(\Sigma\) 中只保留前 \(k\) 个最大的奇异值（其余置零），得到截断 SVD：
+\[
+A_k = U_k \Sigma_k V_k^\top,
+\]
+其中 \(U_k\) 取 \(U\) 的前 \(k\) 列，\(V_k\) 取 \(V\) 的前 \(k\) 列，\(\Sigma_k\) 是 \(k\times k\) 对角阵。可以证明，\(A_k\) 是秩不超过 \(k\) 的矩阵中最逼近原矩阵 \(A\) 的一个（在弗罗贝尼乌斯范数意义下）。这一性质就是数据降维与压缩的数学基础。
+
+举个例子：一张 \(1000 \times 1000\) 的灰度图片可以看作一个矩阵。只保留前 50 个奇异值，重构出来的图像肉眼几乎看不出区别，但存储量从 \(10^6\) 个像素值减少到约 \(50 \times (1000+1000+1)\) 个数值，压缩比惊人。
+
+除此之外，奇异值分解还有以下应用空间。
+\begin{itemize}
+    \item \textbf{主成分分析（PCA）的快速实现}：传统 PCA 需要计算协方差矩阵 \(X^\top X\)，当特征维度很高时，计算量巨大。如果我们直接对中心化后的数据矩阵 \(X\) 进行 SVD：\(X = U \Sigma V^\top\)，那么右奇异向量 \(V\) 的列就是主成分方向，奇异值的平方 \((1/m)\sigma_i^2\) 就是各主成分的方差。这避开了计算协方差矩阵的麻烦，数值上更稳定。
+    \item \textbf{潜在语义分析（LSA）}：在自然语言处理中，文档-词矩阵往往庞大且稀疏。通过截断 SVD 可将词和文档映射到同一个低维语义空间，使相近概念的词或文档在该空间中距离很近，能有效缓解同义词问题。
+    \item \textbf{推荐系统}：用户-物品评分矩阵通常有大量缺失值。利用矩阵补全思想，可假设该矩阵是低秩的，并通过 SVD 近似填充未评分项，预测用户对未接触物品的喜好。
+\end{itemize}
+
+\subsection{向量与矩阵的范数}
+
+我们已经知道向量的长度可以用勾股定理计算，矩阵也有“大小”的概念（例如奇异值就是一种度量）。
+
+\paragraph{向量的范数}
+
+在平面坐标系里，点 \((x_1, x_2)\) 到原点的距离（即向量 \(\mathbf{x} = (x_1, x_2)\) 的长度）就是 \(\sqrt{x_1^2 + x_2^2}\)。推广到 \(n\) 维空间，这就是 \textbf{L2 范数}：
+\[
+\|\mathbf{x}\|_2 = \sqrt{x_1^2 + x_2^2 + \dots + x_n^2}.
+\]
+但“长度”未必只有这一种定义。根据不同场景，我们可以选择不同的范数来度量向量。常用范数都满足正定性（非零向量的范数大于零）、齐次性（\(\|\alpha \mathbf{x}\| = |\alpha| \|\mathbf{x}\|\)）和三角不等式（\(\|\mathbf{x} + \mathbf{y}\| \le \|\mathbf{x}\| + \|\mathbf{y}\|\)），因此都可以作为一种“距离”的测量。
+
+\begin{definition}[L1 范数]
+    向量 \(\mathbf{x} = (x_1, \dots, x_n)\) 的 L1 范数定义为各分量绝对值之和：
+    \[
+    \|\mathbf{x}\|_1 = |x_1| + |x_2| + \dots + |x_n|.
+    \]
+    在平面上，它描述的是“曼哈顿距离”：只能沿坐标轴方向行走时，到原点需要经过的总路程。
+\end{definition}
+
+\begin{definition}[L2 范数（欧几里得范数）]
+    就是高中熟悉的向量模长，定义为各分量平方和的平方根：
+    \[
+    \|\mathbf{x}\|_2 = \sqrt{x_1^2 + x_2^2 + \dots + x_n^2}.
+    \]
+    又称欧几里得范数，对应两点之间的直线距离。
+\end{definition}
+
+\begin{definition}[无穷范数（最大范数）]
+    取所有分量绝对值的最大值：
+    \[
+    \|\mathbf{x}\|_\infty = \max\{|x_1|, |x_2|, \dots, |x_n|\}.
+    \]
+    它关心的是向量在某一个维度上能延伸多远，忽略其他维度的细节。
+\end{definition}
+
+实际上可以看出，范数的定义是有规律的。对于 \(p \ge 1\)，定义 \(L_p\) 范数为：
+\[
+\|\mathbf{x}\|_p = \left( |x_1|^p + |x_2|^p + \dots + |x_n|^p \right)^{1/p}.
+\]
+当 \(p=1\) 时是 L1 范数，\(p=2\) 时是 L2 范数，\(p \to \infty\) 时是无穷范数。不同的 \(p\) 值对应不同的几何形状：L1 范数的单位球是菱形，L2 范数的单位球是圆形，无穷范数的单位球是正方形。理解这些范数的几何直观有助于调参。
+
+\paragraph{矩阵的范数}
+
+向量有长度，矩阵作为一个整体，我们也需要一个数来刻画它的“大小”。最常用也最自然的一种矩阵范数是\textbf{弗罗贝尼乌斯范数}。
+
+\begin{definition}[弗罗贝尼乌斯范数]
+    设 \(A\) 为 \(m \times n\) 矩阵，将其所有元素的平方求和再开方：
+    \[
+    \|A\|_F = \sqrt{\sum_{i=1}^m \sum_{j=1}^n a_{ij}^2}.
+    \]
+    可以想象成把矩阵“拉直”成一个 \(mn\) 维向量，再计算它的 L2 范数。
+\end{definition}
+
+这个范数有两条极有用的性质：
+\begin{enumerate}
+    \item \(\|A\|_F^2 = \operatorname{tr}(A^\top A) = \operatorname{tr}(A A^\top)\)，即它等于矩阵与其转置乘积的迹（主对角线之和）。
+    \item 若矩阵的奇异值为 \(\sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_r > 0\)，则
+    \[
+    \|A\|_F = \sqrt{\sigma_1^2 + \sigma_2^2 + \dots + \sigma_r^2}.
+    \]
+    因此，弗罗贝尼乌斯范数整合了所有奇异值。
+\end{enumerate}
+
+\section{张量}
+
+在上一节中，我们学习了矩阵及其运算。在机器学习中，我们经常需要处理更高维度的数据，例如彩色图像（高×宽×通道）、视频（时间×高×宽×通道）等。这些高维数组在数学上统称为\textbf{张量}（tensor）。
+
+\begin{itemize}
+    \item 标量（一个数）可以看成是\textbf{零阶张量}。
+    \item 向量（一维数组）可以看成是\textbf{一阶张量}。
+    \item 矩阵（二维数组）可以看成是\textbf{二阶张量}。
+    \item 三维及更高维的数组统称为\textbf{高阶张量}。
+\end{itemize}
+
+与矩阵类似，张量也可以进行逐元素加法、逐元素乘法（Hadamard 乘法）和数乘。还有一种称为“张量积”的更复杂的乘法，但远远超出了我们的讨论范围。此外，张量还可以进行维度重排（如改变形状），但其严格的数学定义涉及指标运算，这里也不深究。
+
+\subsection{张量函数与求导初步}
+
+在机器学习中，我们经常需要计算一个函数对它的输入张量的导数（梯度）。例如，损失函数 $\mathcal{L}$ 通常是模型参数 $W$ 的函数，我们需要求 $\nabla_W \mathcal{L}$ 来更新参数。这就引出了一个问题：对矩阵（或更高阶张量）求偏导数，究竟会得到什么东西？
+
+我们先从最简单的情况开始，逐步推广。
+
+\paragraph{标量对向量的导数}
+
+设 $f(\mathbf{x}) : \mathbb{R}^n \to \mathbb{R}$ 是一个标量函数，输入是 $n$ 维向量。它的梯度 $\nabla_{\mathbf{x}} f$ 自然就是一个 $n$ 维向量，每个分量是 $f$ 对 $\mathbf{x}$ 的对应分量的偏导数：
+\begin{equation}
+\nabla_{\mathbf{x}} f = \begin{pmatrix}
+\dfrac{\partial f}{\partial x_1}, & \dfrac{\partial f}{\partial x_2}, & \cdots, & \dfrac{\partial f}{\partial x_n}
+\end{pmatrix}^\top .
+\end{equation}
+这个结果也是我们熟悉的“梯度向量”。
+
+\paragraph{标量对矩阵的导数：矩阵梯度}
+
+现在，考虑输入是一个 $m \times n$ 矩阵 $X$，输出仍然是一个标量 $f(X)$。那么，$f$ 对 $X$ 中每一个元素 $x_{ij}$ 都可以求偏导数。很自然地，我们可以把这些偏导数按照 $X$ 的形状排列起来，构成一个同样大小的矩阵，称为矩阵梯度：
+\begin{definition}[矩阵梯度]
+设 $f: \mathbb{R}^{m \times n} \to \mathbb{R}$ 为标量函数，则 $f$ 对矩阵 $X$ 的梯度定义为一个 $m \times n$ 的矩阵：
+\begin{equation}
+\nabla_X f = \begin{pmatrix}
+\frac{\partial f}{\partial x_{11}} & \frac{\partial f}{\partial x_{12}} & \cdots & \frac{\partial f}{\partial x_{1n}} \\[4pt]
+\frac{\partial f}{\partial x_{21}} & \frac{\partial f}{\partial x_{22}} & \cdots & \frac{\partial f}{\partial x_{2n}} \\
+\vdots & \vdots & \ddots & \vdots \\
+\frac{\partial f}{\partial x_{m1}} & \frac{\partial f}{\partial x_{m2}} & \cdots & \frac{\partial f}{\partial x_{mn}}
+\end{pmatrix} .
+\end{equation}
+\end{definition}
+
+这告诉我们：\textbf{标量对矩阵求导，得到的是一个与输入矩阵形状完全相同的矩阵。} 这一结论在机器学习的反向传播中被反复使用。
+
+\paragraph{向量对向量的导数：雅可比矩阵}
+
+情况再复杂一点：输入是 $n$ 维向量 $\mathbf{x}$，输出是 $p$ 维向量 $\mathbf{f}(\mathbf{x}) = (f_1(\mathbf{x}), \dots, f_p(\mathbf{x}))^\top$。这时，每一个输出分量 $f_i$ 对每一个输入分量 $x_j$ 都有一个偏导数，共 $p \times n$ 个。把它们按照“第 $i$ 行第 $j$ 列是 $\partial f_i / \partial x_j$”的规则排成一个矩阵，就得到了\textbf{雅可比矩阵}（Jacobian matrix）：
+\begin{definition}[雅可比矩阵]
+设 $\mathbf{f}: \mathbb{R}^n \to \mathbb{R}^p$，其雅可比矩阵 $J_{\mathbf{f}}$ 为 $p \times n$ 矩阵：
+\begin{equation}
+J_{\mathbf{f}} = \begin{pmatrix}
+\frac{\partial f_1}{\partial x_1} & \frac{\partial f_1}{\partial x_2} & \cdots & \frac{\partial f_1}{\partial x_n} \\[4pt]
+\frac{\partial f_2}{\partial x_1} & \frac{\partial f_2}{\partial x_2} & \cdots & \frac{\partial f_2}{\partial x_n} \\
+\vdots & \vdots & \ddots & \vdots \\
+\frac{\partial f_p}{\partial x_1} & \frac{\partial f_p}{\partial x_2} & \cdots & \frac{\partial f_p}{\partial x_n}
+\end{pmatrix}, \qquad (J_{\mathbf{f}})_{ij} = \frac{\partial f_i}{\partial x_j}.
+\end{equation}
+\end{definition}
+
+注意：在绝大多数优化与机器学习文献中，\textbf{无论输入输出是列向量还是行向量，雅可比矩阵都约定为“输出维度为行、输入维度为列”的 $p\times n$ 矩阵}。有了这个约定，就不会因为行列方向的差异而混淆。
+
+\paragraph{终极情形：任意张量对任意张量的导数}
+
+如果输入是矩阵，输出也是矩阵（例如函数 $F: \mathbb{R}^{m \times n} \to \mathbb{R}^{p \times q}$），那么每个输出元素 $F_{ij}$ 对每个输入元素 $X_{kl}$ 都有一个偏导数。这些偏导数自然需要一个四维数组才能存下，这就是一个\textbf{四阶张量}：
+\[
+(\nabla_X F)_{ijkl} = \frac{\partial F_{ij}}{\partial X_{kl}} .
+\]
+更一般地，输入是 $k$ 阶张量，输出是 $l$ 阶张量，那么梯度将是一个 $k+l$ 阶张量。虽然这在数学上很“重”，但在编程中，自动求导框架已经为我们默默地管理好了这些高维数组。
+
+\begin{mdframed}[frametitle=例：矩阵函数的梯度]
+设 $\mathbf{x} \in \mathbb{R}^n$ 为输入向量，$W \in \mathbb{R}^{n \times m}$ 为权重矩阵，$\mathbf{b} \in \mathbb{R}^m$ 为偏置向量，定义
+\[
+\mathbf{f}(W) = W^\top \mathbf{x} + \mathbf{b} .
+\]
+这里 $\mathbf{f}$ 的输出是一个 $m$ 维向量。我们想计算 $\mathbf{f}$ 对 $W$ 的梯度。
+
+根据严格定义，这是一个向量对矩阵的导数，结果应该是一个三阶张量。具体写出来：
+\[
+f_i = \sum_{k=1}^n W_{ki} x_k + b_i, \qquad i = 1,\dots, m .
+\]
+对 $W_{jk}$ 求偏导：
+\[
+\frac{\partial f_i}{\partial W_{jk}} = \begin{cases}
+x_k, & \text{如果 } j = i ,\\
+0, & \text{否则}.
+\end{cases}
+\]
+所以 $\nabla_W \mathbf{f}$ 是一个 $m \times n \times m$ 的三阶张量，只有“$i=j$”的那些切片才非零，每一片分别是 $\mathbf{x}$ 的转置。
+
+在实际编程中，我们往往不需要亲自处理这个三阶张量。一个更常见的做法是：假设最终我们关心的是某个标量损失函数 $\mathcal{L}$ 对 $W$ 的梯度。利用链式法则，我们可以直接从标量 $\mathcal{L}$ 出发，计算出 $\nabla_W \mathcal{L}$，其结果就是一个与 $W$ 形状相同的矩阵。那为什么张量的阶数反而经过一次链式法则之后还下降了呢？这是因为中间的高阶张量结构因为张量积而被“压缩”了，最终只留下了与参数同形的梯度矩阵！
+
+因此我们常说“梯度与参数同形”，这对应着本节第二部分“标量对矩阵的梯度”。
+\end{mdframed}
+
+\subsection{张量梯度的运算法则}
+
+上面定义的梯度运算满足许多与标量求导相似的性质：
+\begin{enumerate}
+    \item \textbf{线性法则}：$\nabla_X (f + g) = \nabla_X f + \nabla_X g$，$\nabla_X (\alpha f) = \alpha \nabla_X f$（$\alpha$ 为常数）。
+    \item \textbf{乘积法则}：$\nabla_X (f \cdot g) = f \cdot \nabla_X g + g \cdot \nabla_X f$。
+    \item \textbf{链式法则}：若 $y = g(X)$，$z = f(y)$，则 $\nabla_X z = \nabla_y z \cdot \nabla_X g$（这里的乘法需要按照张量缩并来理解，但形式上与以前学的链式法则一致）。
+\end{enumerate}
+这些法则的严格证明需要用到张量指标的运算，但直观上可以完全类比标量函数的求导规则来理解和记忆，实际上也并不需要任何多余的证明。
+
+掌握了“对矩阵求偏导数能得到一个同样形状的矩阵”这一核心直觉，就足以理解机器学习中绝大多数基于梯度的优化算法了。至于更严谨的数学细节，感兴趣的同学可以参考微分几何或张量分析的相关教材。
+
+\section{简明概率论与数理统计}
+
+\subsection{概率论部分}
+
+\paragraph{条件概率}
+
+我们高中的时候已经学过了条件概率：事件A在事件B发生的条件下发生的概率，记为$P(A \mid B) = \frac{P(A \cap B)}{P(B)}$。
+
+若设事件A为某个假设，事件B为观察到的数据，则：
+\begin{description}
+    \item[先验概率] 在观察到数据之前对某个事件发生的概率的估计：$P(A)$。
+    \item[后验概率] 在观察到数据之后对某个事件发生的概率的更新: $P(A \mid B)$。
+\end{description}
+
+先验概率和后验概率之间的关系由贝叶斯定理给出：
+\begin{equation}
+P(A \mid B) = \frac{P(B \mid A)P(A)}{P(B)} = \frac{P(B \mid A)P(A)}{P(B \mid A)P(A) + P(B \mid \overline{A})P(\overline{A})}    \end{equation}
+或更一般的形式：
+\begin{equation}
+P(A_i \mid B) = \frac{P(B \mid A_i)P(A_i)}{\sum_j P(B \mid A_j)P(A_j)}, \quad \bigsqcup_i A_i = \Omega, \quad P(A_i) > 0.
+\end{equation}
+
+\begin{mdframed}[frametitle=例：贝叶斯定理的应用]
+    新冠疫情期间我们经历了多次核酸检测。假设某核酸检测的的敏感度（一个携带病毒的人，检测结果为阳性的概率）为0.95，特异度（一个不携带病毒的人，检测结果为阴性的概率）为0.98。假设在某个社区中，感染率（携带病毒的人的比例）为0.01。如果某个人的检测结果为阳性，他确实感染了病毒的概率是多少？对此人进行复检，第二次检测结果仍然为阳性，那么他确实感染了病毒的概率又是多少？
+
+    设事件A为“某人感染了病毒”，事件B为“某人检测结果为阳性”，则我们要求的是$P(A \mid B)$。根据贝叶斯定理，带入数据计算可得：
+\begin{equation}
+P(A \mid B) = \frac{0.95 \times 0.01}{0.95 \times 0.01 + (1 - 0.98) \times (1 - 0.01)} \approx 0.32
+\end{equation}
+    复检计算方法类似，只是将先验概率更新为第一次检测的后验概率，即$P(A) = 0.32$，再次带入贝叶斯定理计算，可得概率约为0.96。
+\end{mdframed}
+
+\paragraph{随机变量}
+
+随机变量指的是一个函数，它将样本空间中的每个结果映射到一个实数。随机变量可以是离散的（取有限或可数无限个值）或连续的（取不可数无限个值）。
+
+概率质量函数（PMF）适用于离散随机变量，定义为$P(X=x)$，表示随机变量X取值为x的概率，必然满足归一化条件$\sum_x P(X=x) = 1$。有时也被称为概率密度函数。
+
+概率密度函数（PDF）适用于连续随机变量，定义为$f(x)$，满足$P(a \leq X \leq b) = \int_a^b f(x) dx$，必然满足归一化条件$\int_{-\infty}^{\infty} f(x) dx = 1$。
+
+累积分布函数（分布函数，CDF）的定义为$F(x) = P(X \leq x)$，对于离散随机变量，CDF可以通过PMF求得：$F(x) = \sum_{t \leq x} P(X=t)$；对于连续随机变量，CDF可以通过PDF求得：$F(x) = \int_{-\infty}^x f(t) dt$。根据定义，容易得知CDF在$-\infty$处为0，在$+\infty$处为1，并且CDF是单调非减的。
+
+两个随机变量X和Y是独立的，如果对于所有的x和y，满足$P(X=x, Y=y) = P(X=x)P(Y=y)$（离散情况）或$f_{X,Y}(x,y) = f_X(x)f_Y(y)$（连续情况）。独立性意味着一个随机变量的取值不会影响另一个随机变量的取值。这个定义在下文中非常重要：在几乎所有的机器学习算法中，我们都假设数据是独立同分布的（i.i.d.）。这意味着每个数据点都是从同一个分布中独立采样的，这使得我们能够使用统计方法来分析和建模数据。
+
+研究随机变量，除了研究其分布之外，我们还需要研究以下几个重要的统计量：
+\begin{description}
+    \item[期望] 随机变量的平均值，定义为$E[X] = \sum_x x P(X=x)$（离散情况）或$E[X] = \int_{-\infty}^{\infty} x f(x) dx$（连续情况）。期望反映了随机变量的中心位置。
+    \item[方差] 随机变量的离散程度，定义为$Var(X) = E[(X - E[X])^2]$。方差越大，随机变量的取值越分散。
+    \item[协方差] 两个随机变量之间的线性关系，定义为$Cov(X,Y) = E[(X - E[X])(Y - E[Y])]$。协方差为正表示两个随机变量倾向于同时增加或减少，为负表示一个随机变量增加时另一个倾向于减少，为零表示两个随机变量之间没有线性关系。可以使用协方差矩阵来表示多个随机变量之间的协方差关系：这是一个方阵，其中第i行第j列的元素表示第i个随机变量和第j个随机变量之间的协方差。协方差矩阵是对称的，并且是半正定的（即对于任意$\mathbf{x}$，$\mathbf{x}^\top Cov(X) \mathbf{x} \ge 0$）。协方差矩阵在多元统计分析中非常重要，例如主成分分析（PCA）就是基于协方差矩阵的特征分解来寻找数据的主要方向。
+\end{description}
+
+\subsection{统计学部分}
+
+概率论是从概率密度函数到统计量。但在实际情况中，我们往往只有数据，而不知道数据的分布。统计学就是从数据出发，推断数据的分布和参数。我们一般会假设数据满足某种分布（即预设先验分布），然后通过数据来估计分布的参数。估计参数得到的结果有两种：点估计和区间估计。
+\begin{description}
+    \item[点估计] 使用单个数值来估计一个参数，例如使用样本均值来估计总体均值。
+    \item[区间估计] 使用一个区间来估计一个参数，例如使用置信区间来估计总体均值的范围。
+\end{description}
+
+具体如何估计，学界曾有争论，分为“频率学派”和“贝叶斯学派”。频率学派认为参数是固定的，数据是随机的；贝叶斯学派认为参数是随机的，数据是固定的。两种学派有不同的估计方法和理论基础，但在实际应用中，往往可以结合使用。相对应的，频率学派中最常用的参数估计方法是最大似然估计（MLE），而贝叶斯学派中最常用的参数估计方法是贝叶斯估计（MAP）。
+\begin{definition}[似然函数]
+    给定参数值，描述这样的数据出现的概率的函数称为似然函数。特别的，当数据独立同分布时，似然函数可以写成所有数据点的概率的乘积。由于每一个因子都是小于1的数，因此乘积会变得非常小，不易计算。为了解决这个问题，我们通常使用对数似然函数，即似然函数的自然对数，这样就将乘积转化为求和，简化了计算。
+\end{definition}
+
+\begin{description}
+    \item[最大似然估计] 选择使得似然函数最大的参数值作为估计值。也被称作“最概然估计”，是频率学派中最常用的参数估计方法。
+    \item[贝叶斯估计] 结合先验概率和似然函数，使用贝叶斯定理计算后验概率，并选择使得后验概率最大的参数值作为估计值。也被称作“最大后验估计”，是贝叶斯学派中最常用的参数估计方法。
+\end{description}
+
+\begin{mdframed}[frametitle=练习：MLE与MAP估计]
+    设某核酸检测的敏感度为0.95，特异性为1.00。假设在某个社区中，感染率为0.1。每一个人的检测结果都是独立的。某10人混管的检测结果为阳性，设该混管中感染者数量为$X$。
+
+    计算：
+    \begin{enumerate}
+        \item 写出似然函数。做MLE估计。
+        \item 写出后验概率，做MAP估计。（假设$X$遵从二项分布）
+    \end{enumerate}
+
+    这10个人不可能全是健康人。因此，对于$X=0$的情况，似然函数为0（即不可能发生）。
+    
+    对于$X>0$的情况：每个感染者漏检的概率都是0.05，每个健康人误检的概率都是0。因此，似然函数为$P(B \mid X) = 1 - 0.05^X$。
+
+    MLE估计：倾向于选择使得似然函数最大的$X$值。由于似然函数是单调递增的，因此MLE估计为$X=10$。
+
+    MAP估计：需要结合先验概率。先验概率为$P(X) = \binom{10}{X} 0.1^X 0.9^{10-X}$。后验概率为$P(X \mid B) \propto P(B \mid X) P(X)$，需要计算每个$X$值的后验概率，并选择使得后验概率最大的$X$值作为MAP估计。挨个计算，发现$X=1$的后验概率最大，因此MAP估计为$X=1$。
+
+    这说明MLE估计在某些情况下很不合理，因为它没有考虑先验知识，而MAP估计则能够结合先验知识，得到更合理的结果。但MAP估计的缺点在于它依赖于先验分布的选择，具有一定的主观性，可能产生偏差。
+\end{mdframed}
+
+\begin{mdframed}[frametitle=练习：连续情况下的MLE估计]
+设某连续随机变量$X$的概率密度函数为$f(x) = \frac{1}{\theta} e^{-x/\theta}$，其中$\theta > 0$是未知参数。
+
+\begin{enumerate}
+    \item 证明：该PDF是一个合法的概率密度函数。
+    \item 现在有一个样本数据集$\{x_1, x_2, \ldots, x_n\}$，其中每个$x_i$都是从上述分布中独立采样的。写出似然函数，并求出$\theta$的MLE估计。
+\end{enumerate}
+
+第一问需要验证非负性和归一化（0延拓）。应当非常容易验证。
+
+对于第二问，直接进行计算，似然函数为：
+\begin{equation}
+L(\theta) = \prod_{i=1}^n f(x_i) = \prod_{i=1}^n \frac{1}{\theta} e^{-x_i/\theta} = \frac{1}{\theta^n} e^{-\sum_{i=1}^n x_i / \theta}
+\end{equation}
+直接求导有困难，改为求对数似然函数：
+\begin{equation}
+\ell(\theta) = \log L(\theta) = -n \log \theta - \frac{1}{\theta} \sum_{i=1}^n x_i
+\end{equation}
+对$\theta$求导并令其为0，得到：
+\begin{equation}\frac{d\ell}{d\theta} = -\frac{n}{\theta} + \frac{1}{\theta^2} \sum_{i=1}^n x_i = 0 \implies \hat{\theta} = \frac{1}{n} \sum_{i=1}^n x_i
+\end{equation}
+\end{mdframed}
+
