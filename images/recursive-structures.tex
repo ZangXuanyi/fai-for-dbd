@@ -1,0 +1,146 @@
+\begin{tikzpicture}[
+    % 通用样式设定
+    base/.style = {
+        draw,
+        minimum width=1.2cm,
+        minimum height=0.8cm,
+        rounded corners=3pt,
+        font=\sffamily
+    },
+    rnn_green/.style = {base, fill=green!15, draw=green!60!black},
+    rnn_blue/.style  = {base, fill=blue!15, draw=blue!60!black},
+    rnn_orange/.style= {base, fill=orange!15, draw=orange!60!black},
+    rnn_red/.style   = {base, fill=red!15, draw=red!60!black},
+    arr/.style       = {-{Latex[length=2mm]}, semithick},
+    vec/.style       = {arr, densely dashed, thick, blue!50!black}
+]
+
+% ===================== 1. One-to-Many =====================
+\begin{scope}[shift={(0,0)}]
+    \node at (2, 2) {One-to-Many (1 对 N)};
+    
+    % RNN 单元
+    \node[rnn_green] (r1) at (0,0) {RNN};
+    \node[rnn_green] (r2) at (2,0) {RNN};
+    \node[rnn_green] (r3) at (4,0) {RNN};
+    
+    % 隐藏状态传递
+    \draw[arr] (r1) -- (r2) node[midway, above] {$h_1$};
+    \draw[arr] (r2) -- (r3) node[midway, above] {$h_2$};
+    
+    % 输入（单个）
+    \node (x) [above=0.5cm of r1] {$x$};
+    \draw[arr] (x) -- (r1);
+    
+    % 输出（多个）
+    \node (y1) [below=0.6cm of r1] {$y_1$};
+    \node (y2) [below=0.6cm of r2] {$y_2$};
+    \node (y3) [below=0.6cm of r3] {$y_3$};
+    \draw[arr] (r1) -- (y1);
+    \draw[arr] (r2) -- (y2);
+    \draw[arr] (r3) -- (y3);
+\end{scope}
+
+% ===================== 2. Many-to-One =====================
+\begin{scope}[shift={(7.5,0)}]
+    \node at (2, 2) {Many-to-One (N 对 1)};
+    
+    % RNN 单元
+    \node[rnn_blue] (r1) at (0,0) {RNN};
+    \node[rnn_blue] (r2) at (2,0) {RNN};
+    \node[rnn_blue] (r3) at (4,0) {RNN};
+    
+    % 隐藏状态传递
+    \draw[arr] (r1) -- (r2);
+    \draw[arr] (r2) -- (r3);
+    
+    % 输入（多个）
+    \node (x1) [above=0.5cm of r1] {$x_1$};
+    \node (x2) [above=0.5cm of r2] {$x_2$};
+    \node (x3) [above=0.5cm of r3] {$x_3$};
+    \draw[arr] (x1) -- (r1);
+    \draw[arr] (x2) -- (r2);
+    \draw[arr] (x3) -- (r3);
+    
+    % 输出（单个）
+    \node (y) [below=0.6cm of r3] {$y$};
+    \draw[arr] (r3) -- (y);
+\end{scope}
+
+% ===================== 3. Many-to-Many (同步) =====================
+\begin{scope}[shift={(0,-4.5)}]
+    \node at (2, 2) {Many-to-Many (同步, N 对 N)};
+    
+    % RNN 单元
+    \node[rnn_orange] (r1) at (0,0) {RNN};
+    \node[rnn_orange] (r2) at (2,0) {RNN};
+    \node[rnn_orange] (r3) at (4,0) {RNN};
+    
+    % 隐藏状态传递
+    \draw[arr] (r1) -- (r2);
+    \draw[arr] (r2) -- (r3);
+    
+    % 输入
+    \node (x1) [above=0.5cm of r1] {$x_1$};
+    \node (x2) [above=0.5cm of r2] {$x_2$};
+    \node (x3) [above=0.5cm of r3] {$x_3$};
+    \draw[arr] (x1) -- (r1);
+    \draw[arr] (x2) -- (r2);
+    \draw[arr] (x3) -- (r3);
+    
+    % 输出
+    \node (y1) [below=0.6cm of r1] {$y_1$};
+    \node (y2) [below=0.6cm of r2] {$y_2$};
+    \node (y3) [below=0.6cm of r3] {$y_3$};
+    \draw[arr] (r1) -- (y1);
+    \draw[arr] (r2) -- (y2);
+    \draw[arr] (r3) -- (y3);
+\end{scope}
+
+% ===================== 4. Many-to-Many (异步，编码器-解码器) =====================
+\begin{scope}[shift={(7.5,-4.5)}]
+    \node at (2, 2) {Many-to-Many (异步, N 对 M)};
+    
+    % --- 编码器 (Encoder) ---
+    \node[rnn_blue] (e1) at (0,0) {RNN};
+    \node[rnn_blue] (e2) at (2,0) {RNN};
+    \node[rnn_blue] (e3) at (4,0) {RNN};
+    
+    % 编码器隐藏状态
+    \draw[arr] (e1) -- (e2);
+    \draw[arr] (e2) -- (e3);
+    
+    % 编码器输入
+    \node (x1) [above=0.5cm of e1] {$x_1$};
+    \node (x2) [above=0.5cm of e2] {$x_2$};
+    \node (x3) [above=0.5cm of e3] {$x_3$};
+    \draw[arr] (x1) -- (e1);
+    \draw[arr] (x2) -- (e2);
+    \draw[arr] (x3) -- (e3);
+    
+    % --- 解码器 (Decoder) ---
+    \node[rnn_red] (d1) at (0,-2) {RNN};
+    \node[rnn_red] (d2) at (2,-2) {RNN};
+    \node[rnn_red] (d3) at (4,-2) {RNN};
+    
+    % 解码器隐藏状态
+    \draw[arr] (d1) -- (d2);
+    \draw[arr] (d2) -- (d3);
+    
+    % 解码器输出
+    \node (y1) [below=0.6cm of d1] {$y_1$};
+    \node (y2) [below=0.6cm of d2] {$y_2$};
+    \node (y3) [below=0.6cm of d3] {$y_3$};
+    \draw[arr] (d1) -- (y1);
+    \draw[arr] (d2) -- (y2);
+    \draw[arr] (d3) -- (y3);
+    
+    % 上下文向量（连接编码器最终状态与解码器初始状态）
+    \draw[vec] (e3.south) -- ++(0,-0.6) -| node[pos=0.5, above] {Context Vector} (d1.north);
+    
+    % 起始标记（可选，通常解码器第一个输入）
+    \node (go) [left=0.5cm of d1] {\texttt{<GO>}};
+    \draw[arr] (go) -- (d1);
+\end{scope}
+
+\end{tikzpicture}
