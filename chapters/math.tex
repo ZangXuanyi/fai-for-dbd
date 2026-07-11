@@ -16,11 +16,29 @@
 
 前者，我们称为“右极限”，即“从右边趋近”；后者，我们称为“左极限”，即“从左边趋近”。
 
-对于一个函数$f(x)$，如果$\lim_{x \to x_0^+} f(x) = \lim_{x \to x_0^-} f(x)$，则称函数$f(x)$在点$x_0$处有极限，记作$\lim_{x \to x_0} f(x)$。所以上述函数$f(x) = 1/x$在点$x_0 = 0$处没有极限；但函数$g(x) = \sin x / x$在点$x_0 = 0$处有极限，且$\lim_{x \to 0} g(x) = 1$。
+对于一个函数$f(x)$，如果在$x=x_0$处的左极限和右极限都存在，且相等，即$\lim_{x \to x_0^+} f(x) = \lim_{x \to x_0^-} f(x)$，则称函数$f(x)$在点$x_0$处有极限，记作$\lim_{x \to x_0} f(x)$。所以上述函数$f(x) = 1/x$在点$x_0 = 0$处没有极限；但函数$g(x) = \sin x / x$在点$x_0 = 0$处有极限，且$\lim_{x \to 0} g(x) = 1$。
 
 类似的可以定义“无穷远处的极限”，即当$x \to +\infty$时，$f(x)$的值趋近于某个常数$A$，记作$\lim_{x \to +\infty} f(x) = A$。
 
 需要说明，函数在某一点处的极限是否存在，和函数在该点处是否有定义没有关系；但和函数在该点“附近”有没有定义、怎样定义有关系。比方说函数$f(x) = \sin x / x$在点$x_0 = 0$处没有定义，但它在点$x_0 = 0$处有极限。
+
+极限有以下的运算性质：
+\begin{itemize}
+    \item $\lim_{x \to x_0} (f(x) + g(x)) = \lim_{x \to x_0} f(x) + \lim_{x \to x_0} g(x)$；
+    \item $\lim_{x \to x_0} (f(x)g(x)) = \lim_{x \to x_0} f(x) \cdot \lim_{x \to x_0} g(x)$；
+    \item $\lim_{x \to x_0} (f(x)/g(x)) = \lim_{x \to x_0} f(x) / \lim_{x \to x_0} g(x)$，前提是$\lim_{x \to x_0} g(x) \neq 0$。
+\end{itemize}
+
+\begin{mdframed}[frametitle=例：求极限]\itshape
+求这两个极限：
+\[ \lim_{x\to 2}\frac{2x^3+3x-1}{x^3+3}, \quad \lim_{x\to +\infty}\frac{3x^2+2x-1}{x^2-2} \]
+
+对于前一个极限，发现分子和分母在$x = 2$处都有定义，可以直接代入$x = 2$，得到$21/11$。
+
+对于后一个极限，将其进行适当的变形：
+\[ \frac{3x^2+2x-1}{x^2-2} = 3+\frac{2x-1}{x^2-2} \]
+发现当$x\to +\infty$时，$(2x-1)/(x^2-2) \to 0$，所以$\lim_{x\to +\infty}(3x^2+2x-1)/(x^2-2) = 3$。
+\end{mdframed}
 
 \paragraph{连续}
 
@@ -41,6 +59,8 @@ f(x) = \begin{cases} 1, & x > 0 \\
 \item 无穷间断点：函数在该点处的左极限或右极限不存在。比方说函数$f(x) = 1/x$在点$x_0 = 0$处的左极限为$\lim_{x \to 0^-} f(x) = -\infty$，右极限为$\lim_{x \to 0^+} f(x) = +\infty$，所以点$x_0 = 0$是函数$f(x)$的无穷间断点。
 \item 振荡间断点：函数在该点处的左极限或右极限不存在，且函数在该点处的值在某个区间内振荡。比方说函数$f(x) = \sin(1/x)$在点$x_0 = 0$处的左极限和右极限都不存在，且函数在点$x_0 = 0$附近的值在区间$[-1, 1]$内振荡，所以点$x_0 = 0$是函数$f(x)$的振荡间断点。
 \end{enumerate}
+
+对于高中学习过的初等函数（多项式函数、指数函数、对数函数、三角函数），它们在定义域内都是连续的。
 
 \subsection{导数和微分}
 
@@ -82,7 +102,7 @@ f'(x_0) = \lim_{\Delta x \to 0} \frac{f(x_0 + \Delta x) - f(x_0)}{\Delta x}
 \begin{equation}
 \Delta S = \pi (r + \Delta r)^2 - \pi r^2 = 2\pi r \Delta r + \pi (\Delta r)^2
 \end{equation}
-我们知道，当$\Delta r < 1$时，$(\Delta r)^2 < < \Delta r$。由此，是否可以利用$2\pi r \Delta r$来估计这个增量呢？我们计算产生的相对误差$2\pi r \Delta r / 2\pi r \Delta r = \Delta r / (2r)$，当$\Delta r$非常小时，这个误差是可以忽略的。
+我们知道，当$\Delta r < 1$时，$(\Delta r)^2 \ll \Delta r$。由此，是否可以利用$2\pi r \Delta r$来估计这个增量呢？我们计算产生的相对误差$2\pi r \Delta r / 2\pi r \Delta r = \Delta r / (2r)$，当$\Delta r$非常小时，这个误差是可以忽略的。
 
 对于更一般的情形，我们有：
 \begin{definition}[微分]
@@ -150,7 +170,7 @@ d^2y = d(f'(g(x)) g'(x) dx) = d(f'(g(x)) g'(x)) dx + f'(g(x)) g'(x) d^2x
 f(\lambda x_1 + (1 - \lambda) x_2) \le \lambda f(x_1) + (1 - \lambda) f(x_2), \quad \forall \lambda \in [0, 1]
 \end{equation}
 则称函数$f(x)$在区间$I$上是凸函数。
-\end{definition}
+\end{definition} 
 
 反转上述式子中的不等号，就可以得到凹函数的定义。
 
@@ -193,21 +213,59 @@ d F(x) = f(x) dx
     \end{itemize}
 \end{multicols}
 
-对应一阶微分的形式不变性$f'(g(x)) g'(x) dx = f'(u) du$，我们可以得到不定积分的换元公式：
-\begin{equation}
-\int f'(g(x)) g'(x) dx = \int f'(u) du
-\end{equation}
-
 对应一阶微分的运算律（主要是和、积的微分公式），我们可以得到不定积分的线性性质：
 \begin{itemize}
     \item $\int (f(x) + g(x)) dx = \int f(x) dx + \int g(x) dx$；
     \item $\int c f(x) dx = c \int f(x) dx$，其中$c$是常数。
 \end{itemize}
 
+对应一阶微分的形式不变性$f'(g(x)) g'(x) dx = f'(u) du$，我们可以得到不定积分的换元公式：
+\begin{equation}
+\int f'(g(x)) g'(x) dx = \int f'(u) du
+\end{equation}
+特别注意：这个公式不仅可以从左到右用（即“第一换元法”），也可以从右到左用（即“第二换元法”）。
+
+\begin{mdframed}[frametitle=例：不定积分的第一换元法]\itshape
+求积分：$\int \tan x dx$。
+
+我们知道$\tan x = \sin x / \cos x$，所以$\int \tan x dx = \int \sin x / \cos x dx$。令$u = \cos x$，则$du = -\sin x dx$，所以：
+\begin{equation}
+\int \tan x dx = -\int du / u = -\ln |u| + C = -\ln |\cos x| + C
+\end{equation}
+\end{mdframed}
+
+\begin{mdframed}[frametitle=例：不定积分的第二换元法]\itshape
+求积分：$\int \sqrt{a^2 - x^2} dx$，其中$a > 0$。
+
+不妨设$x = a \sin t$，则$dx = a \cos t dt$，所以：
+\begin{equation}
+\int \sqrt{a^2 - x^2} dx = \int \sqrt{a^2 - a^2 \sin^2 t} \cdot a \cos t dt = a^2 \int \cos^2 t dt
+\end{equation}
+
+知道$\cos^2 t = (1 + \cos 2t)/2$，所以：
+\begin{equation}
+\int \cos^2 t dt = \frac{1}{2} \int (1 + \cos 2t) dt = \frac{1}{2} (t + \frac{1}{2} \sin 2t) + C
+\end{equation}
+从$x = a \sin t$，我们可以得到$t = \arcsin(x/a)$，$\sin 2t = 2 \sin t \cos t = 2 (x/a) \sqrt{1 - (x^2 / a^2)} = 2x \sqrt{a^2 - x^2} / a^2$。所以：
+\begin{equation}
+\int \sqrt{a^2 - x^2} dx = \frac{a^2}{2} \arcsin(x/a) + \frac{x}{2} \sqrt{a^2 - x^2} + C
+\end{equation}
+
+\end{mdframed}
+
 对应函数的积的微分$d(uv) = u dv + v du$，我们可以得到不定积分的分部积分公式：
 \begin{equation}
 \int u dv = uv - \int v du
 \end{equation}
+
+\begin{mdframed}[frametitle=例：不定积分的分部积分法]\itshape
+求不定积分$\int x^3 \ln x dx$。
+
+令$u = \ln x$，则$du = dx / x$；令$dv = x^3 dx$，则$v = x^4 / 4$。所以：
+\begin{equation}
+\int x^3 \ln x dx = \frac{x^4}{4} \ln x - \int \frac{x^4}{4} \cdot \frac{dx}{x} = \frac{x^4}{4} \ln x - \frac{1}{4} \int x^3 dx = \frac{x^4}{4} \ln x - \frac{x^4}{16} + C
+\end{equation}
+\end{mdframed}
 
 \paragraph{定积分}
 
@@ -220,6 +278,12 @@ d F(x) = f(x) dx
 \begin{theorem}[定积分的存在性（Lebesgue定理）]
 设函数$f(x)$在区间$[a, b]$上有定义，若函数间断点的测度为零（即函数间断点的个数有限，或者函数间断点的个数无限，但这些间断点的总长度为零），则函数$f(x)$在区间$[a, b]$上可积。
 \end{theorem}
+
+\begin{mdframed}[frametitle=例：定积分的计算（定义）]\itshape
+求定积分$\int_0^a \sqrt{a^2 - x^2} dx$。
+
+发现曲线$y = \sqrt{a^2 - x^2}$是半径为$a$的圆的上半部分，所以这个定积分的值就是半径为$a$的圆的面积的一半，即$\pi a^2 / 2$。
+\end{mdframed}
 
 定积分的运算性质和不定积分类似，有线性性（可和、可数乘），也有区间可分性：
 \begin{equation}
@@ -235,6 +299,43 @@ d F(x) = f(x) dx
 \end{equation}
 \end{theorem}
 这是计算定积分的最重要的工具。所以，我们为了计算定积分，只需要找到被积函数的一个原函数，然后代入积分上下限即可。
+
+另外，由于定积分有上下限，所以有很多巧妙的方法计算。
+
+\begin{mdframed}[frametitle=例：定积分的计算（换元法）]\itshape
+求定积分$I= \int_{0}^{\pi} \frac{x\sin x}{1 + \cos^2 x} dx$。
+
+由定积分的性质，我们将其拆成两段：
+\begin{equation}
+I= \int_{0}^{\pi/2} \frac{x\sin x}{1 + \cos^2 x} dx + \int_{\pi/2}^{\pi} \frac{x\sin x}{1 + \cos^2 x} dx
+\end{equation}
+对于后半段，我们令$x = \pi - t$，则$dx = -dt$，所以：
+\begin{equation}
+\int_{\pi/2}^{\pi} \frac{x\sin x}{1 + \cos^2 x} dx = \int_{0}^{\pi/2} \frac{(\pi - t)\sin t}{1 + \cos^2 t} dt
+\end{equation}
+所以：
+\begin{equation}
+I= \int_{0}^{\pi/2} \frac{x\sin x}{1 + \cos^2 x} dx + \int_{0}^{\pi/2} \frac{(\pi - t)\sin t}{1 + \cos^2 t} dt
+= \int_{0}^{\pi/2} \frac{\pi \sin x}{1 + \cos^2 x} dx
+\end{equation}
+令$u = \cos x$，则$du = -\sin x dx$，所以：
+\begin{equation}
+I= \pi \int_{0}^{\pi/2} \frac{\sin x dx}{1 + \cos^2 x} = -\pi \int_{1}^{0} \frac{du}{1 + u^2} = \pi \int_{0}^{1} \frac{du}{1 + u^2} = \pi \arctan 1 = \frac{\pi^2}{4}
+\end{equation}
+\end{mdframed}
+
+\begin{mdframed}[frametitle=例：定积分的计算（分部积分法）]\itshape
+计算定积分$\int_0^1 x \ln(x+1) dx$。
+
+我们令$u = \ln(x+1)$，则$du = dx/(x+1)$；令$dv = x dx$，则$v = x^2/2$。所以：
+\begin{equation}
+\int_0^1 x \ln(x+1) dx = \left. \frac{x^2}{2} \ln(x+1) \right|_0^1 - \int_0^1 \frac{x^2}{2} \cdot \frac{dx}{x+1} = \frac{1}{2} \ln 2 - \frac{1}{2} \int_0^1 (x - 1 + \frac{1}{x+1}) dx
+\end{equation}
+所以：
+\begin{equation}
+\int_0^1 x \ln(x+1) dx = \frac{1}{2} \ln 2 - \frac{1}{2} \left.\left(  \frac{x^2}{2} - x + \ln(x+1)  \right)\right|_0^1 = \frac{1}{4}
+\end{equation}
+\end{mdframed}
 
 \paragraph{反常积分} 在实际问题中，我们经常会遇到一些函数在某些点上不连续，或者积分区间是无穷区间的情况。对于这些情况，我们可以使用反常积分来处理。
 \subparagraph{第一类反常积分}
@@ -268,6 +369,40 @@ d F(x) = f(x) dx
 \begin{equation}
 \int_a^{+\infty} f(x) dx = \lim_{b \to +\infty} \int_a^b f(x) dx = \lim_{b \to +\infty} (F(b) - F(a)) = \lim_{b \to +\infty} F(b) - F(a)
 \end{equation}
+对应的换元法和分部积分法也可以类似地使用。
+
+\begin{mdframed}[frametitle=例：第一类反常积分的计算（定义）]\itshape
+计算反常积分$\int_{-\infty}^{+\infty} dx/(x^2+1)$。
+
+由公式可得，
+\begin{equation}
+\int_{-\infty}^{+\infty} \frac{dx}{x^2+1} = \left. \arctan x \right|_{-\infty}^{+\infty} = \frac{\pi}{2} - \left(-\frac{\pi}{2}\right) = \pi
+\end{equation}
+\end{mdframed}
+
+\begin{mdframed}[frametitle=例：第一类反常积分的计算（换元）]\itshape
+计算反常积分$\int_1^{+\infty} dx/x\sqrt{1+x^2}$。
+
+令$x = 1/t$，则$dx = -dt/t^2$，所以：
+\begin{equation}
+\int_1^{+\infty} \frac{dx}{x\sqrt{1+x^2}} = \int_0^1 \frac{dt}{\sqrt{1+t^2}} = \left. \ln(t + \sqrt{1+t^2}) \right|_0^1 = \ln(1 + \sqrt{2})
+\end{equation}
+
+由这个实例可知，经过换元之后，有的反常积分可以化为定积分。
+\end{mdframed}
+
+\begin{mdframed}[frametitle=例：第一类反常积分的计算（分部积分）]\itshape
+计算反常积分$\int_1^{+\infty} \frac{\arctan x}{x^3} dx$。
+
+令$u = \arctan x$，则$du = dx/(1+x^2)$；令$dv = dx/x^3$，则$v = -1/(2x^2)$。所以：
+\begin{equation}
+\int_1^{+\infty} \frac{\arctan x}{x^3} dx = \left. -\frac{\arctan x}{2x^2} \right|_1^{+\infty} + \int_1^{+\infty} \frac{dx}{2x^2(1+x^2)} = \frac{\pi}{8} + \frac{1}{2} \int_1^{+\infty} \left( \frac{1}{x^2} - \frac{1}{x^2+1} \right) dx
+\end{equation}
+所以：
+\begin{equation}
+\int_1^{+\infty} \frac{\arctan x}{x^3} dx = \frac{\pi}{8} + \frac{1}{2} \left. \left( -\frac{1}{x} - \arctan x \right) \right|_1^{+\infty} = \frac{1}{2}
+\end{equation}
+\end{mdframed}
 
 \subparagraph{第二类反常积分}
 
@@ -299,6 +434,8 @@ d F(x) = f(x) dx
 \begin{equation}
 \int_a^{b^-} f(x) dx = \lim_{x \to b^-} \int_a^x f(x) dx = \lim_{x \to b^-} (F(x) - F(a)) = \lim_{x \to b^-} F(x) - F(a)
 \end{equation}
+
+第二类反常积分的计算留给同学们自己去练习，总体上和第一类反常积分相差不大。
 
 \subsection{多元函数的微分和积分}
 
@@ -341,6 +478,18 @@ d F(x) = f(x) dx
 \frac{\partial z}{\partial x} dx = A dx
 \end{equation}
 \end{theorem}
+
+在机器学习中，下面这个定义非常重要：
+\begin{definition}[梯度]
+设函数$y = f(\mathbf{x})$，其中$\mathbf{x} = (x_1, x_2, \cdots, x_n)$，则称：
+\begin{equation}
+\nabla f(\mathbf{x}) = \left( \frac{\partial f}{\partial x_1}, \frac{\partial f}{\partial x_2}, \cdots, \frac{\partial f}{\partial x_n} \right)
+\end{equation}
+为函数$y = f(\mathbf{x})$的梯度。
+\end{definition}
+可以看出，梯度实际上就是对函数$y = f(\mathbf{x})$的所有自变量求偏导数之后组成的向量。
+
+我们发现，在有限维中，我们处理$\mathbb{R}^n \to \mathbb{R}$的函数时完全可以参考$\mathbb{R} \to \mathbb{R}$的情况；而事实上我们就是这么做的，把多元函数一概不严谨的当作一元函数处理能减少思维负担。当$n=\infty$时，我们就进入了泛函分析的领域，这是另一个重要的分支，不过我们不会涉及。
 
 \paragraph{累次积分} 对于二元函数$z = f(x, y)$，我们可以定义累次积分。设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，则称：
 \begin{equation}
@@ -575,7 +724,7 @@ a & b \\ c & d
 
 利用这些性质，通过矩阵的“行变换”我们可以把矩阵化成上三角形式，然后把主对角线元素相乘，就得到行列式。这让手算行列式容易很多。
 
-\begin{mdframed}[frametitle=例：计算行列式]
+\begin{mdframed}[frametitle=例：计算行列式]\itshape
 计算
 \[
 \begin{vmatrix}
@@ -692,7 +841,7 @@ AB = BA = I_n,
 
 得到特征值 \(\lambda\) 后，代入 \((A - \lambda I)\mathbf{v} = \mathbf{0}\)，解出的非零解向量就是对应的特征向量。
 
-\begin{mdframed}[frametitle=例：求特征值与特征向量] 
+\begin{mdframed}[frametitle=例：求特征值与特征向量] \itshape
 设 \(A = \begin{bmatrix} 4 & 1 \\ 2 & 3 \end{bmatrix}\)。求特征值：
 \[
 \det\begin{pmatrix} 4-\lambda & 1 \\ 2 & 3-\lambda \end{pmatrix} = (4-\lambda)(3-\lambda) - 2 = \lambda^2 - 7\lambda + 10 = 0,
@@ -785,7 +934,7 @@ SVD的计算过程非常复杂：
     \item 对于正奇异值 \(\sigma_i > 0\)，左奇异向量可由 \(\mathbf{u}_i = \frac{1}{\sigma_i} A \mathbf{v}_i\) 得到；若 \(m > r\)，还需找齐 \(U\) 剩下的零空间标准正交基。
 \end{enumerate}
 
-\begin{mdframed}[frametitle=例：奇异值分解]
+\begin{mdframed}[frametitle=例：奇异值分解]\itshape
 \(A = \begin{bmatrix} 1 & 1 \\ 0 & 1 \\ 0 & 0 \end{bmatrix}\)。先求 \(A^\top A = \begin{bmatrix} 1 & 1 \\ 1 & 2 \end{bmatrix}\)。其特征方程为 \((1-\lambda)(2-\lambda)-1 = \lambda^2 - 3\lambda + 1 = 0\)，特征值 \(\lambda_1 = \frac{3+\sqrt{5}}{2} \approx 2.618\)，\(\lambda_2 = \frac{3-\sqrt{5}}{2} \approx 0.382\)。奇异值 \(\sigma_1 = \sqrt{\lambda_1} \approx 1.618\)，\(\sigma_2 = \sqrt{\lambda_2} \approx 0.618\)。进而求出 \(V\) 的特征向量，再通过 \(A\mathbf{v}_i\) 得到 \(U\) 的前两列，最后一列补一个正交向量即可。
 \end{mdframed}
 
@@ -941,7 +1090,7 @@ J_{\mathbf{f}} = \begin{pmatrix}
 \]
 更一般地，输入是 $k$ 阶张量，输出是 $l$ 阶张量，那么梯度将是一个 $k+l$ 阶张量。虽然这在数学上很“重”，但在编程中，自动求导框架已经为我们默默地管理好了这些高维数组。
 
-\begin{mdframed}[frametitle=例：矩阵函数的梯度]
+\begin{mdframed}[frametitle=例：矩阵函数的梯度]\itshape
 设 $\mathbf{x} \in \mathbb{R}^n$ 为输入向量，$W \in \mathbb{R}^{n \times m}$ 为权重矩阵，$\mathbf{b} \in \mathbb{R}^m$ 为偏置向量，定义
 \[
 \mathbf{f}(W) = W^\top \mathbf{x} + \mathbf{b} .
@@ -1000,7 +1149,7 @@ P(A \mid B) = \frac{P(B \mid A)P(A)}{P(B)} = \frac{P(B \mid A)P(A)}{P(B \mid A)P
 P(A_i \mid B) = \frac{P(B \mid A_i)P(A_i)}{\sum_j P(B \mid A_j)P(A_j)}, \quad \bigsqcup_i A_i = \Omega, \quad P(A_i) > 0.
 \end{equation}
 
-\begin{mdframed}[frametitle=例：贝叶斯定理的应用]
+\begin{mdframed}[frametitle=例：贝叶斯定理的应用]\itshape
     新冠疫情期间我们经历了多次核酸检测。假设某核酸检测的的敏感度（一个携带病毒的人，检测结果为阳性的概率）为0.95，特异度（一个不携带病毒的人，检测结果为阴性的概率）为0.98。假设在某个社区中，感染率（携带病毒的人的比例）为0.01。如果某个人的检测结果为阳性，他确实感染了病毒的概率是多少？对此人进行复检，第二次检测结果仍然为阳性，那么他确实感染了病毒的概率又是多少？
 
     设事件A为“某人感染了病毒”，事件B为“某人检测结果为阳性”，则我们要求的是$P(A \mid B)$。根据贝叶斯定理，带入数据计算可得：
@@ -1047,7 +1196,7 @@ P(A \mid B) = \frac{0.95 \times 0.01}{0.95 \times 0.01 + (1 - 0.98) \times (1 - 
     \item[贝叶斯估计] 结合先验概率和似然函数，使用贝叶斯定理计算后验概率，并选择使得后验概率最大的参数值作为估计值。也被称作“最大后验估计”，是贝叶斯学派中最常用的参数估计方法。
 \end{description}
 
-\begin{mdframed}[frametitle=练习：MLE与MAP估计]
+\begin{mdframed}[frametitle=练习：MLE与MAP估计]\itshape
     设某核酸检测的敏感度为0.95，特异性为1.00。假设在某个社区中，感染率为0.1。每一个人的检测结果都是独立的。某10人混管的检测结果为阳性，设该混管中感染者数量为$X$。
 
     计算：
@@ -1067,7 +1216,7 @@ P(A \mid B) = \frac{0.95 \times 0.01}{0.95 \times 0.01 + (1 - 0.98) \times (1 - 
     这说明MLE估计在某些情况下很不合理，因为它没有考虑先验知识，而MAP估计则能够结合先验知识，得到更合理的结果。但MAP估计的缺点在于它依赖于先验分布的选择，具有一定的主观性，可能产生偏差。
 \end{mdframed}
 
-\begin{mdframed}[frametitle=练习：连续情况下的MLE估计]
+\begin{mdframed}[frametitle=练习：连续情况下的MLE估计]\itshape
 设某连续随机变量$X$的概率密度函数为$f(x) = \frac{1}{\theta} e^{-x/\theta}$，其中$\theta > 0$是未知参数。
 
 \begin{enumerate}

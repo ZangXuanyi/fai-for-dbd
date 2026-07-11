@@ -1,1 +1,254 @@
 \chapter{递归神经网络}
+
+我们在前两章已经讨论过了普通的线性网络和卷积网络。它们都有一个性质：网络一次性接受全部输入，然后输出结果。也就是说，网络的输入是一个固定长度的向量，输出也是一个固定长度的向量；两次输入之间，网络的状态是没有关联的。
+
+我们不妨考虑新的问题：如果我们要实现一个实时翻译的工具，这样用户每说一句话，希望系统就跟着翻译成另一种语言。这样的系统有一个问题：我们说的话，前一句和后一句是有关系的，此时如果再使用普通的线性网络或卷积网络，网络的状态没有关联，那么就无法利用前一句话的信息来翻译后一句话。这个问题的本质原因是：现在的输入是\textbf{有时序的}，也就是说，输入是一个序列，而不是一个固定长度的向量。类似的输入形式包括长文章、音频、视频等，他们都是有时序的。
+
+那么，能不能让模型“记住”前面输入的内容，使得按时序输入的内容会影响网络的后续呢？这就是递归神经网络（Recurrent Neural Network, RNN）要解决的问题。
+
+\section{朴素的RNN}
+
+我们先前所研究的线性网络、卷积网络等，又被称作是前馈神经网络（FNN）。它们的统一定义可以非常简单的写成：
+\begin{equation}
+    \hat{y} = f(x, \theta)
+\end{equation}
+其中$x$是输入，$\hat{y}$是输出，$\theta$是网络的各种参数——可学习的，不可学习的，等等。这个定义的特点是：网络一次性接受全部输入，然后输出结果。
+
+而作为对比，简单的RNN的定义可以写成：
+\begin{equation}
+    \hat{y}_t = f(x_t, h_{t-1}, \theta)
+\end{equation}
+其中，$t$是时间步，是RNN处理数据的基本单位。$x_t$是第$t$个时间步的输入，$\hat{y}_t$是第$t$个时间步的输出，$h_{t-1}$是第$t-1$个时间步的隐藏状态。这个定义的特点是：网络每次只接受一个输入$x_t$，然后输出结果$\hat{y}_t$，同时还会传递一个隐藏状态$h_{t-1}$给下一次输入。
+
+故而，按照这个定义，朴素的RNN有四种结构如\cref{fig:rnn_structures}所示，它们分别是：
+\begin{description}
+    \item[One-to-Many] 输入是一个，输出是多个。比如输入一张图片，输出是对图片的描述。
+    \item[Many-to-One] 输入是多个，输出是一个。比如输入一段音频，输出是对音频的情感分析。
+    \item[Many-to-Many (同步)] 输入是多个，输出也是多个，输入和输出同时进行。比如输入一段视频，输出是对视频的每一帧的分类。
+    \item[Many-to-Many (异步)] 输入是多个，输出也是多个，但输入和输出不同步。比如输入一段英文，输出是对应的中文翻译。 
+\end{description}
+
+\begin{figure}
+    \centering
+    \input{images/recursive-structures.tex}
+    \caption{RNN 的四种基本结构}
+    \label{fig:rnn_structures}
+\end{figure}
+
+\subsection{最简单的RNN：隐藏状态与输出}
+
+为了具体说明RNN是如何工作的，我们写出最早由 Elman\cite{elman1990finding} 提出的朴素 RNN（亦称 Elman 网络）的前向传播公式。为便于分析，这里假设输入 $x_t$ 和隐藏状态 $h_t$ 均为标量，所有参数也取为标量或向量。更实际的应用中会将它们推广到高维张量，但其核心机制与一维情形完全一致。
+
+给定序列 $\{x_1, x_2, \dots, x_T\}$，隐藏状态的更新规则为：
+\begin{equation}\label{eq:simple_rnn}
+    h_t = \tanh\!\big(W x_t + U h_{t-1} + b\big),
+\end{equation}
+其中 $W$、$U$ 和 $b$ 是待优化的参数：$W$ 控制当前输入的影响，$U$ 控制上一时刻记忆的保留，$b$ 是偏置。
+
+为了进一步得到预测值，我们再经过一个线性输出层：
+\begin{equation}\label{eq:simple_rnn_out}
+    \hat{y}_t = V h_t + \theta,
+\end{equation}
+
+$V$ 和 $\theta$ 同样是可学习的参数。在这里，所有参数都是一阶张量（标量）或零阶张量，从而让后续的梯度分析保持简洁。
+
+我们来看看这个网络为什么能处理时序。将 \cref{eq:simple_rnn} 按时间展开：
+\begin{align}
+    h_1 &= \tanh(W x_1 + U h_0 + b), \\
+    h_2 &= \tanh(W x_2 + U h_1 + b), \\
+    h_3 &= \tanh(W x_3 + U h_2 + b), \\
+    &\;\;\vdots
+\end{align}
+其中 $h_0$ 是初始隐藏状态，通常设为 0。容易看出，$h_t$ 的值不仅取决于当前的 $x_t$，还通过 $h_{t-1}$ 裹挟了所有历史输入 $x_1, \dots, x_{t-1}$ 的信息。隐藏状态 $h_t$ 就像是网络对“迄今为止所有输入”的一个动态总结，这个总结随着新的输入不断更新，从而使模型拥有了记忆能力。对于 Many-to-One 结构（例如情感分类），我们通常取最后一个时刻的隐藏状态 $h_T$ 送入分类器；对于 Many-to-Many 同步结构，每个时刻都会产生一个 $\hat{y}_t$。
+
+这种记忆能力是前馈网络所不具备的。正因为 $h_t$ 中编码了历史上下文，简单的 RNN 就可以用来应对序列预测、语言建模、机器翻译等诸多时序任务。然而，这种“简单记忆”在实际训练中会暴露一个严重的缺陷——梯度消失，我们接下来就分析这个问题。
+
+\subsection{沿时间反向传播（BPTT）}
+要训练 RNN，我们仍然采用梯度下降法，因此需要计算损失函数对各个参数的梯度。设整个序列的损失为各时刻损失之和：
+\[
+\mathcal{L} = \sum_{t=1}^T \mathcal{L}_t(\hat{y}_t, y_t),
+\]
+
+其中 $\mathcal{L}_t$ 是第 $t$ 步的损失（例如交叉熵或均方误差）。因为参数 $W, U, b, V, \theta$ 在所有时间步共享，计算 $\frac{\partial\mathcal{L}}{\partial W}$ 等梯度时，必须先将网络沿时间展开成一个深度为 $T$ 的前馈计算图，再应用反向传播。这种特殊的反向传播称为\textbf{沿时间反向传播}（BackPropagation Through Time, BPTT）。
+
+我们以参数 $U$ 为例来观察梯度的流动。根据链式法则，
+\[
+\frac{\partial\mathcal{L}}{\partial U} = \sum_{t=1}^T \frac{\partial\mathcal{L}_t}{\partial h_t} \cdot \frac{\partial h_t}{\partial U}.
+\]
+而 $\frac{\partial h_t}{\partial U}$ 又通过 $h_t$ 与 $h_{t-1}$ 的递归关系展开：
+\[
+\frac{\partial h_t}{\partial U} \;\propto\; \sum_{k=1}^t \left( \prod_{j=k+1}^t \frac{\partial h_j}{\partial h_{j-1}} \right) \cdot \frac{\partial h_k}{\partial U}.
+\]
+其中 $\frac{\partial h_j}{\partial h_{j-1}}$ 正是相邻时间步隐藏状态之间的 Jacobian（在此为一阶导数）。从 \cref{eq:simple_rnn} 可直接求出：
+
+\begin{equation}\label{eq:dh_dh}
+    \frac{\partial h_j}{\partial h_{j-1}} = \tanh'\big(W x_j + U h_{j-1} + b\big) \cdot U.
+\end{equation}
+因此，任何对较远过去（小的 $k$）的梯度都必须经过大量因子 $\frac{\partial h_j}{\partial h_{j-1}}$ 的连乘。RNN 能否学习到长距离依赖关系，就完全取决于这些连乘积的大小。
+
+\subsection{梯度消失与梯度爆炸}
+
+现在我们来考察 \cref{eq:dh_dh} 的幅度。$\tanh$ 函数的导数满足 $|\tanh'(z)| \le 1$，且在输入远离零点时迅速趋近于 0。于是我们有上界：
+\[
+\Bigl|\frac{\partial h_j}{\partial h_{j-1}}\Bigr| \le |U|.
+\]
+更精确的分析\cite{bengio1994learning}表明，当 $|U| < 1$ 时，连乘项会随着时间步数的增加而指数衰减：
+\[
+\prod_{j=k+1}^t \frac{\partial h_j}{\partial h_{j-1}} \xrightarrow{\;t-k\;\text{变大}\;} 0.
+\]
+这就意味着，\textbf{损失函数对早期时间步的参数梯度几乎为零}，模型无法从远距离的依赖中获得有效的学习信号。这种现象正是\textbf{梯度消失}。反之，如果 $|U| > 1$ 且 $\tanh'$ 保持在一定水平，连乘可能导致梯度指数增长，产生\textbf{梯度爆炸}。不过，由于 $\tanh$ 的饱和特性，梯度爆炸相对容易通过梯度裁剪等方法控制，而梯度消失则更具根本性。
+
+\begin{mdframed}[frametitle=例子：梯度随距离衰减的数值演示]\itshape
+\hspace{2em}取朴素 RNN，$U = 0.9$，并假设每一步 $\tanh'$ 均为 $0.9$（非常乐观的估计）。则相邻时间步梯度的缩放因子为 $0.81$。经过 $10$ 步之后，累积因子变为 $0.81^{10} \approx 0.12$；经过 $50$ 步之后，累积因子约为 $10^{-5}$。在大多数真实场景中，$\tanh'$ 往往会更小（例如 $0.5$ 甚至更小），此时梯度消失的速度还会更快。
+这意味着，即便理论上 RNN 可以记忆任意久远的历史，但在实际训练中，\textbf{梯度只能在有限的时间窗口内有效传播}，模型真正能够利用的上下文长度非常有限。
+\end{mdframed}
+
+梯度消失意味着，虽然SimpleRNN理论上能够捕捉任意长的依赖，但在实践中，当依赖长度超过大约10个时间步时，梯度信号已经衰减得无法有效指导训练了\cite{bengio1994learning}。我们可以用一个直观的比喻：每一层时间步的 \(\tanh\) 导数像一扇半开的门，每次通过都会让信号“漏掉”一部分，经过几十扇门之后，信号基本漏光了。这就是为什么早期训练出的朴素RNN很难处理长文章、长音频等需要真正“长期记忆”的任务。
+
+正因为如此，在很长一段时间里，RNN只能靠精心初始化、使用ReLU等替代激活函数（但这几乎必然带来梯度爆炸，就算做了梯度裁剪或参数裁剪可以避免梯度爆炸，这也是以模型的拟合能力为代价的）、或干脆将序列截断在较短长度内训练。
+
+不过，即便这个极度朴素的RNN在长期依赖面前心有余而力不足，它依然完美诠释了递归网络的核心思想：通过状态递归融合序列上下文。这一思想贯穿了整个序列建模领域，并为后续所有更强大的循环架构奠定了基石。
+
+\begin{mdframed}[frametitle=思考：能否让 \(U\) 接近正交来缓解消失？]
+\itshape
+\hspace{2em}既然问题出在连乘矩阵的谱半径，一个自然的想法是约束 \(U\) 为正交矩阵（或酉矩阵），这样 \(U^\top\) 的范数为1，梯度便只受 \(\tanh\) 导数的影响，消失速度会大大降低。事实上，这正是“一元/正交RNN (uRNN)” 等改进工作的基本动机。然而，纯粹的线性正交映射仍然要面对 \(\tanh\) 饱和带来的信号衰减；真正健壮的长期记忆仍需门控结构加持。
+\end{mdframed}
+
+\section{LSTM和GRU}
+
+人们曾反复研究朴素的RNN，试图通过各种约束让它不会梯度消失，最终基本全部失败：如果不能从模型的设计上解决这个问题，那么无论如何训练，梯度消失都是无法避免的。于是，研究者们开始尝试在RNN的基础上增加一些结构，让网络能够“选择性地记忆”信息，而不是简单地将所有信息都压缩到一个隐藏状态中。
+
+LSTM\citetitle{hochreiter1997long}就是最著名的解决方案了。它在RNN的基础上增加了三个门控结构：输入门、遗忘门和输出门。通过这些门控，LSTM可以选择性地保留或丢弃信息，从而有效缓解梯度消失问题。
+
+\subsection{LSTM的结构}
+
+LSTM的核心是一个称为“细胞状态”（cell state）的向量，它贯穿整个序列的处理过程。细胞状态可以看作是网络的长期记忆，而隐藏状态则是网络的短期记忆。通过门控机制，LSTM能够控制信息在细胞状态和隐藏状态之间的流动。
+
+具体而言，他有六个主要的计算步骤：
+\begin{align}
+    f_t &= \sigma(W_f x_t + U_f h_{t-1} + b_f) \label{eq:lstm_forget}\\
+    i_t &= \sigma(W_i x_t + U_i h_{t-1} + b_i) \\
+    o_t &= \sigma(W_o x_t + U_o h_{t-1} + b_o) \\
+    \tilde{c}_t &= \tanh(W_c x_t + U_c h_{t-1} + b_c) \\
+    c_t &= f_t \odot c_{t-1} + i_t \odot \tilde{c}_t \label{eq:lstm_cell}\\
+    h_t &= o_t \odot \tanh(c_t) \label{eq:lstm_hidden}
+\end{align}
+其中：
+\begin{itemize}
+    \item $f_t$ 是遗忘门，决定了前一时刻的细胞状态 $c_{t-1}$ 中哪些信息需要被遗忘；
+    \item $i_t$ 是输入门，决定了当前输入 $x_t$ 中哪些信息需要被写入细胞状态；
+    \item $o_t$ 是输出门，决定了细胞状态 $c_t$ 中哪些信息需要被输出到隐藏状态 $h_t$；
+    \item $\tilde{c}_t$ 是候选细胞状态，表示当前输入和前一隐藏状态的组合信息；
+    \item $c_t$ 是当前的细胞状态，结合了遗忘门和输入门的作用；
+    \item $h_t$ 是当前的隐藏状态，结合了输出门和细胞状态的作用；
+    \item $\sigma(\cdot)$ 是 Sigmoid 激活函数；
+    \item $\odot$ 表示Hadamard积。
+\end{itemize}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{rnn-lstm.png}
+    \caption{LSTM的结构示意图}
+    \label{fig:lstm_structure}
+\end{figure}
+
+LSTM的结构如图\ref{fig:lstm_structure}所示\cite{kexuefm-7888}。看起来很复杂。
+
+从感性上理解，LSTM通过门控，控制细胞状态的流入和流出，从而使得梯度可以在细胞状态中长时间传播，缓解了梯度消失问题。那么，它究竟是怎样做到避免梯度消失的呢？下面我们一起拆解一下。
+
+\subsection{LSTM的梯度流动分析}
+
+我们自然可以像上文一样计算$\partial h_t / \partial h_{t-1}$，但由于LSTM的结构复杂，且有\cref{eq:lstm_hidden}，所以我们不妨先分析$\partial c_t / \partial c_{t-1}$，因此我们往这个方向分析。
+
+和上文类似，我们只关心1维的情形。此时，根据求导公式，有
+\begin{equation}\label{eq:lstm_dc_dc}
+\frac{\partial c_t}{\partial c_{t-1}} = f_t + \frac{\partial f_t}{\partial c_{t-1}} c_{t-1} + \frac{\partial i_t}{\partial c_{t-1}} \tilde{c}_t + i_t \frac{\partial \tilde{c}_t}{\partial c_{t-1}}.
+\end{equation}
+
+现在我们希望分析这个东西的大小。对于sigmoid函数和tanh函数，我们有以下公式：
+\begin{align}
+    \sigma'(z) &= \sigma(z)(1 - \sigma(z)) \le 0.25, \\
+    \tanh'(z) &= 1 - \tanh^2(z) \le 1.
+\end{align}
+
+分析\cref{eq:lstm_dc_dc}等号右侧第二项，我们不妨先利用\cref{eq:lstm_forget}和\cref{eq:lstm_hidden}，得到
+\begin{equation}
+    f_t = \sigma(W_f x_t + U_f o_t\odot \tanh(c_{t-1}) + b_f) \in (0, 1)
+\end{equation}
+于是可以求出对应的偏导
+\begin{equation}
+    \frac{\partial f_t}{\partial c_{t-1}} = f_t(1 - f_t) U_f o_t \odot (1-\tanh^2(c_{t-1}))
+\end{equation}
+因为我们只考虑一维的情形，所以这里的Hadamard积就是普通乘法。然后再把$c_{t-1}$乘上去，得到
+\begin{equation}
+    \frac{\partial f_t}{\partial c_{t-1}} c_{t-1} = f_t(1 - f_t) U_f o_t (1-\tanh^2(c_{t-1})) c_{t-1}.
+\end{equation}
+现在分析这东西的上界。因为$f_t \in (0, 1)$，所以$f_t(1 - f_t) \le 0.25$；$(1-\tanh^2(c_{t-1})) c_{t-1} < 0.45$。所以这个东西就等于一个$U_f$乘上一个小于0.25的数，再乘上一个小于0.45的数，所以这个东西的绝对值上界是$0.25 * 0.45 * |U_f| = 0.1125 |U_f|$——还有一个$o_t$，但$o_t \in (0, 1)$，所以这个东西的绝对值上界是$0.1125 |U_f|$。只要初始化不太差，那么$|U_f|$不会太大，所以这个东西的绝对值应该最终会非常小。
+
+同理，分析\cref{eq:lstm_dc_dc}等号右侧第三项和第四项，也可以得到类似的结论：它们的绝对值上界都是一个小于1的数乘上对应的参数。所以说在这里 $U_f$ 相当于被4个门控制了，压缩得非常厉害。
+
+所以说，\cref{eq:lstm_dc_dc}占主导的项应该是等号右侧第一项$f_t$，而且$f_t \in (0, 1)$。那么现在的问题就是：会不会梯度消失，取决于$f_t$的大小。如果$f_t$接近0，那么梯度就会消失；如果$f_t$接近1，那么梯度就不会消失。
+
+事情在这里出现了转机：$f_t$是一个\textbf{可以被训练的值}。如果我们的任务依赖于历史信息，那么在训练过程中，网络会学到一个较大的$f_t$，从而使得梯度不会消失；如果我们的任务不依赖于历史信息，那么网络会学到一个较小的$f_t$，从而使得梯度消失——但这时候梯度消失也无所谓了！
+
+当然，这些结果都是“概论”，硬要构造一个会梯度消失/爆炸的LSTM来，那也是能构造出来的。此外，就算LSTM能缓解这两个问题，也是在一定步数内，如果你的序列很长，比如几千上万步，那么该消失的还会消失。毕竟单靠一个向量，也缓存不了那么多信息。
+
+人们也研究了很多LSTM的变体。但是，目前所有的LSTM变体，效果都没有显著的比我们这个基本的LSTM更好。
+
+\subsection{GRU的结构和梯度流动}
+
+GRU和LSTM完全不同：GRU没有细胞状态，只有隐藏状态；它也只有重置门和更新门。运算过程是\cite{chung2014empiricalevaluationgatedrecurrent}
+\begin{align}
+    z_t &= \sigma(W_z x_t + U_z h_{t-1} + b_z) \\
+    r_t &= \sigma(W_r x_t + U_r h_{t-1} + b_r) \\
+    \tilde{h}_t &= \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h) \\
+    h_t &= (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t
+\end{align}
+
+还有个更加极端的版本是把$r_t$和$z_t$合并成一个门，叫做MGU\cite{zhou2016minimalgatedunitrecurrent}，运算过程是
+\begin{align}
+    z_t &= \sigma(W_z x_t + U_z h_{t-1} + b_z) \\
+    \tilde{h}_t &= \tanh(W_h x_t + U_h (z_t \odot h_{t-1}) + b_h) \\
+    h_t &= (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t
+\end{align}
+
+不管是哪一个，我们发现在算$\tilde{h}_t$的时候，都要先乘一个$r_t$变成$r_t \odot h_{t-1}$——这是为什么呢？
+
+首先我们观察到，$h_0$一般全零初始化，而$\tilde{h}_t$是由$\tanh$激活，所以结果必然有$|\tilde{h}_t| < 1$，所以说$h_t$本身就有类似门的作用——这和LSTM的$c_t$不一样，后者可以发散。
+
+了解到这一点后，我们再求导
+\begin{equation}
+\frac{\partial h_t}{\partial h_{t-1}} = 1 - z_t - z_t(1-z_t)\tilde{h}_tU_z + (1-\tilde{h}_t^2)r_t(1+(1-r_t)h_{t-1}U_r)U_hz_t
+\end{equation}
+
+这个结果的分析结果和LSTM的类似，主导项目是$1 - z_t$，但是对应的项目比LSTM对应的项少了一个门，因此它们的量级可能更大，相对于LSTM的梯度其实不太稳定。但是从某种歪打正着的角度来看，GRU的梯度应该是比LSTM大点，所以相对不太容易消失；但总体而言更依赖于初始化方式。
+
+\subsection{RNN的局限性}
+
+纵然LSTM、GRU已经把朴素RNN的梯度消失问题缓解了许多，但即使是LSTM，对于非常长的序列（例如一整本书），它也完全无法建模，实测100个时间步之后就已经遗忘得差不多了。
+
+更大的问题是：RNN的训练是串行的，这是它的结构决定的！这导致RNN普遍训练起来极为缓慢，而且无法充分利用现代GPU的并行计算能力，所以如今基本上已经被淘汰得差不多了。虽然RNN在一些小型任务中仍然有应用，但在大规模的自然语言处理任务中，Transformer已经成为主流。
+
+\section{在\mintinline{python}{PyTorch}中使用RNN}
+
+\mintinline{python}{PyTorch} 提供了对RNN、LSTM和GRU的封装，使得我们可以非常方便地使用这些模型——这样甚至并不需要定义其前向传播的计算图了！
+
+\begin{minted}{python}
+import torch
+import torch.nn as nn
+
+# 定义一个简单的RNN模型
+class SimpleRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(SimpleRNN, self).__init__()
+        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        # x: (batch_size, seq_length, input_size)
+        out, _ = self.rnn(x)  # out: (batch_size, seq_length, hidden_size)
+        out = self.fc(out[:, -1, :])  # 取最后一个时间步的输出
+        return out
+\end{minted}
+
+至于LSTM和GRU的使用方法也类似，只需要将\mintinline{python}{nn.RNN}替换为\mintinline{python}{nn.LSTM}或\mintinline{python}{nn.GRU}即可！
