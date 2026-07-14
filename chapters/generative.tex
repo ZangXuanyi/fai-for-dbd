@@ -1,1 +1,914 @@
 \chapter{生成模型}
+
+刚刚我们所讲的内容，都是给模型以数据，希望它们能够利用数据的统计规律，执行分类、回归等任务；但有的时候，我们明显希望模型能够\textbf{生成}数据——例如给定一张猫的照片，模型能生成一张新的猫的照片；或者给定一段文字，模型能生成一段新的文字。这样的任务就属于\textbf{生成建模（generative modeling）}。执行这类任务的模型，我们统称为\textbf{生成模型（generative model）}。
+
+\section{前置知识}
+
+\subsection{生成模型的本质是分布之间的映射}
+
+如果把数据看成数据，那么这个生成模型就没法做了：它只能在训练集上记忆、在测试集上插值。但如果把数据看作一个“分布”，让模型去拟合这个分布，那么生成模型就有了意义。
+
+不过我们一般不会让模型凭空生成分布，一般都是从一个\textbf{参考分布}（也叫先验分布，通常取高斯噪声$\mathcal{N}(0,1)$）开始，经过模型的变换，得到一个新的分布。这个新的分布如果能尽量接近数据分布，那么模型就算学会了生成数据。这说明，\textbf{生成模型的本质是学习一个把参考分布映射到数据分布的变换}。GAN、VAE、Diffusion Model 等生成模型，本质上都是“分布之间的映射”。
+
+这个观点是成立的，而且它正是 Flow Matching、最优传输这一整套现代生成模型理论的出发点。
+
+形式化地说，我们要找一个变换 $T$，使得当 $z \sim p_{\text{ref}}$ 时，$T(z)$ 的分布等于 $p_{\text{data}}$。这里先以最简单的情形——一个确定性映射 $T: \mathbb{R}^d \to \mathbb{R}^d$——来陈述；但要提醒：后面会看到这个“变换”也可以是\textbf{随机映射}（如 VAE 的解码器），或一条\textbf{连续动力学}（如扩散模型 / Flow Matching 的 ODE/SDE），参考空间维度也未必恰好等于 $d$。
+
+这种“把一个分布通过变换变成另一个分布”的操作，数学上叫前推，对确定性映射 $T$ 记作
+\begin{equation}
+T_\# p_{\text{ref}} = p_{\text{data}}.
+\end{equation}
+
+对任意可测集合 $A$，$(T_\# p_{\text{ref}})(A) = p_{\text{ref}}\big(T^{-1}(A)\big)$。直观地说，$T_\# p_{\text{ref}}$ 就是“先按 $p_{\text{ref}}$ 采样 $z$、再算 $T(z)$”所得到的随机变量的分布。
+
+所以不同的生成模型，它们的根本区别在于“怎么前推”：
+\begin{enumerate}
+\item 是“一步”的还是“多步 / 连续”的；
+\item 用什么参数化、怎么表示；
+\item 用什么训练目标去逼近这个变换。
+\end{enumerate}
+
+\begin{mdframed}[frametitle=一维前推的具体计算]
+取参考分布为标准正态 $z\sim\mathcal N(0,1)$。
+\begin{itemize}
+\item \textbf{仿射映射}：取 $T(z) = \sigma z + \mu$。由正态分布的线性变换性质，$T(z)\sim\mathcal N(\mu,\sigma^2)$。这把 $\mathcal N(0,1)$ 前推成了 $\mathcal N(\mu,\sigma^2)$。例如 $T(z)=2z+3$ 得到 $\mathcal N(3,4)$。
+\item \textbf{变成均匀分布}：取 $T(z)=\Phi(z)$，其中 $\Phi$ 是标准正态的累积分布函数。因为“一个连续随机变量代入自己的 CDF”总得到 $[0,1]$ 上的均匀分布，所以 $T(z)\sim\mathcal U[0,1]$。这把高斯前推成了均匀分布。
+\item \textbf{变成离散两点分布}：设数据分布是“点 $a$ 与点 $b$ 各占概率 $1/2$”。取阶梯映射 $T(z)=a$（当 $z<0$）、$T(z)=b$（当 $z\ge0$）。由于 $z<0$ 与 $z\ge0$ 各占概率 $1/2$，$T(z)$ 恰好以各 $1/2$ 的概率取 $a,b$。
+\end{itemize}
+
+最后一个例子还说明一个要点：满足前推要求的映射 $T$ \textbf{往往不唯一}，把 $z$ 区间怎么切给 $a,b$ 都行。生成模型的训练，就是在所有可行映射里挑一个“好”的（光滑、易被神经网络拟合、采样稳定）。扩散模型与 Flow Matching 之所以把映射拆成多步，正是为了让最终挑中的那个映射足够光滑、足够好学。
+
+\end{mdframed}
+
+\subsection{分布映射视角下的生成模型}
+
+许多主流生成模型，都可以理解为“参考分布 $p_{\text{ref}}$ 到数据分布 $p_{\text{data}}$ 的变换”。
+
+\paragraph{变量替换公式}
+“一个分布经过映射变成另一个分布”这件事，在数学上由\textbf{变量替换公式}精确描述。设 $T$ 是一个可逆且光滑的映射，$x = T(z)$，$z\sim p_{\text{ref}}$，则 $x$ 的密度为
+\begin{equation}
+p_X(x) = p_{\text{ref}}\big(T^{-1}(x)\big)\,\big|\det \nabla_x T^{-1}(x)\big|.
+\end{equation}
+其含义是：映射 $T$ 把概率质量从 $z$ 空间搬运到 $x$ 空间；雅可比行列式 $\big|\det\nabla_x T^{-1}\big|$ 记录了“局部体积被拉伸或压缩”的倍数，使搬运后总概率仍为 $1$。一维时这点很直观：若 $x=T(z)$，密度变换里会出现因子 $|\mathrm dz/\mathrm dx|$，它表示“同样一小段概率质量被拉伸到多长的区间”；高维时这个“长度缩放”推广成“体积缩放”，正是雅可比行列式。这个公式就是“分布映射”这一观点的数学本体。
+
+\paragraph{生成对抗模型（GAN）} GAN中的生成器 $G_\theta:\mathbb{R}^d\to\mathbb{R}^d$ 就是一个显式的一步确定性映射，$x = G_\theta(z)$，$z\sim\mathcal N(0,I)$。它生成的分布就是前推 $p_g = (G_\theta)_\# p_{\text{ref}}$。
+\begin{itemize}
+\item GAN 的选择是\textbf{完全不碰变量替换公式}：它既不要求 $G_\theta$ 可逆，也从不计算 $p_g$ 的密度。这类“能采样、但写不出密度”的模型称为\textbf{隐式生成模型}。
+\item 既然没有密度，就无法用最大似然来训练。GAN 的办法是引入一个判别器 $D_\phi$，通过对抗博弈间接度量 $p_g$ 与 $p_{\text{data}}$ 的差距。原始 GAN 的极小极大目标
+\begin{equation}
+\min_\theta\max_\phi\ \ \mathbb{E}_{x\sim p_{\text{data}}}[\log D_\phi(x)] + \mathbb{E}_{z}[\log(1 - D_\phi(G_\theta(z)))],
+\end{equation}
+在判别器取最优时，等价于最小化 $p_g$ 与 $p_{\text{data}}$ 之间的 JS 散度；WGAN 则把这个度量换成 Wasserstein-1 距离。
+\item 代价：要用一个网络一步把高斯直接映成复杂数据分布，这个目标映射高度非线性、不光滑；对抗博弈本身又是一个不稳定的鞍点优化。两者叠加，导致 GAN 训练困难，并常出现\textbf{模式坍缩}（生成分布只覆盖 $p_{\text{data}}$ 的一部分峰）。
+\item 变换形态：\textbf{一步、确定性}。
+\end{itemize}
+
+\paragraph{变分自编码器（VAE）}
+
+VAE 同时学两个方向的映射：编码器 $q_\phi(z\mid x)$ 把数据映到潜空间，解码器 $p_\theta(x\mid z)$ 把潜变量映回数据。生成时只用解码器：$z\sim\mathcal N(0,I)$，$x\sim p_\theta(x\mid z)$。
+\begin{itemize}
+\item VAE 生成的分布是 $p_\theta(x) = \int p_\theta(x\mid z)\,p(z)\,\mathrm{d}z$。这是一个\textbf{有显式密度、但密度中的积分算不出来}的模型。
+\item 它不要求映射可逆，而是把映射做成\textbf{随机的}（解码器是条件分布而非确定函数），从而绕开求逆 $T^{-1}$。代价是密度里的积分无法计算，于是改为优化它的下界——\textbf{证据下界 ELBO}：
+\begin{equation}
+\log p_\theta(x)\ \ge\ \underbrace{\mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)]}_{\text{重构项}}\ -\ \underbrace{D_{\text{KL}}\big(q_\phi(z\mid x)\,\|\,p(z)\big)}_{\text{正则项}}.
+\end{equation}
+重构项要求“数据编码再解码能还原回去”，正则项要求“编码得到的潜分布贴近先验 $\mathcal N(0,I)$”。
+\item 代价：单步随机映射的表达力有限，且 ELBO 与真实对数似然之间存在间隙，生成结果通常偏模糊。
+\item 变换形态：\textbf{一步、随机}。
+\item 扩散模型可以看成 VAE 的“多层堆叠”版本：扩散模型把 VAE 单步的“从潜变量到数据”替换成一长串“$x_t\to x_{t-1}$”的逐层映射，每一层都是一个简单的条件高斯。
+\end{itemize}
+
+\paragraph{标准化流} 标准化流正面处理变量替换公式：它把映射 $T_\theta$ 设计成可逆、且雅可比行列式容易计算的网络，于是 $p_\theta(x)$ 有精确闭式，可直接用最大似然训练。代价是“可逆 + 雅可比易算”这两条对网络结构限制极强。把标准化流取“无穷多个无穷小步”的连续极限，就得到连续标准化流（CNF），可以由一个速度场来描述，其后续直接就是流匹配算法。
+
+\paragraph{扩散模型} 扩散模型构造一整条分布的轨迹：
+\begin{equation}
+p_0 = p_{\text{data}} \;\longrightarrow\; p_1 \;\longrightarrow\; \cdots \;\longrightarrow\; p_T \approx \mathcal{N}(0, I),
+\end{equation}
+其中相邻两个分布只差一点点（加一点点高斯噪声）。生成时沿轨迹反向走，从 $p_T$ 一步步回到 $p_0$。整个“参考分布 → 数据分布”的映射，被拆成 $T$ 个各自非常简单的小映射的复合 $T = T_1\circ T_2\circ\cdots\circ T_T$。
+\begin{itemize}
+\item 关键在于：每个小映射 $T_k$ 只需把分布改变“一点点”，因此 $T_k$ 都接近恒等映射、高度光滑、容易用网络拟合。\textbf{困难的全局映射被摊薄成许多个简单的局部映射。}
+\item 训练目标因此也简单：每一小步都是一个去噪 / 回归问题（第 1、2 章），既没有 GAN 的对抗博弈，也没有标准化流的可逆性约束。这换来训练的高度稳定。
+\item 代价：采样要逐步执行 $T$ 个小映射，比 GAN 的一步前向慢得多。后面的 ODE 解法、Flow Matching、蒸馏，都是为了把这个采样代价降下来。
+\item 变换形态：\textbf{多步}（离散）或\textbf{连续}（SDE/ODE 极限）。
+\end{itemize}
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+ & 映射形态 & 可逆？ & 是否有显式密度 & 训练目标 & 主要代价 \\
+\hline
+GAN & 一步、确定性 & 否 & 否（隐式模型） & 对抗 & 训练不稳、模式坍缩 \\
+\hline
+VAE & 一步、随机 & 否 & 有下界（ELBO） & 最大化 ELBO & 生成偏模糊 \\
+\hline
+标准化流 & 一步、确定性、可逆 & 是 & 精确 & 最大似然 & 网络结构受限 \\
+\hline
+扩散模型 & 多步 / 连续 & 否 & 可优化似然下界 & 逐步去噪回归 & 采样慢 \\
+\hline
+\end{tabular}
+\caption{四类生成模型在“构造映射”上的取舍}
+\label{tab:generative_models}
+\end{table}
+
+由表\cref{tab:generative_models} 可以看出，GAN、VAE、标准化流、扩散模型这四类模型只是在“如何构造、并训练那个 $p_{\text{ref}}\to p_{\text{data}}$ 的映射”上做了不同取舍。
+
+把生成模型统一看成“分布间的映射或传输”之后，会得到三个非常关键的认识，这对之后的理解十分重要：
+\begin{enumerate}
+\item \textbf{多步、连续地构造映射，是为了把训练难度摊薄。} 一步映射（GAN）难训，是因为目标映射本身高度非线性；把它拆成无穷小的步，每一步都接近恒等映射，于是每一步都好学。这就是扩散模型与 Flow Matching 共同的底层逻辑。
+\item \textbf{一条分布轨迹 $\{p_t\}$，可以由不同的“动力学”来实现。} 同一条轨迹既可以用一个随机微分方程（SDE）实现，也可以用一个常微分方程（ODE）实现（第 3 章）。这就是 DDPM、Score-based Model、概率流 ODE 能被统一的原因。
+\item \textbf{既然终极目标只是“把 $p_{\text{ref}}$ 映射到 $p_{\text{data}}$”，那么中间轨迹怎么选是我们的自由。} 扩散模型选了一条由“不断加高斯噪声”自然诱导出的（弯曲的）轨迹；而 Flow Matching 告诉我们：可以直接指定一条更好的轨迹（例如直线），再去学对应的速度场。
+\end{enumerate}
+
+\section{从 DDPM 到得分函数}
+
+\subsection{DDPM的基本原理}
+
+DDPM（Denoising Diffusion Probabilistic Model）是 Ho 等人于 2020 年提出的一类扩散模型。它的核心思想是：把数据分布逐步加噪，直到变成一个简单的高斯分布；然后训练一个神经网络去学习如何从噪声中恢复数据。DDPM 的训练目标是最小化一个简化的均方误差损失，这个损失可以看作是对原始变分下界（ELBO）的近似。
+
+\paragraph{前向过程} 
+
+前向过程每一步只做一件很简单的事：把图片缩小一点点，再掺进一点点高斯噪声。第$t$步的前向过程为：
+\begin{equation}\label{eq:ddpm_forward}
+    x_t = \sqrt{\alpha_t}\,x_{t-1} + \sqrt{\beta_t}\,\varepsilon_t
+\end{equation}
+
+其中 $\varepsilon_t\sim\mathcal N(0,I)$，$\alpha_t$ 与 $\beta_t$ 是预先设定的超参数，满足 $\alpha_t+\beta_t=1$，且$\alpha_t$接近1。这个式子可以看作是：第一项将上一步的图缩小一点，第二项掺进一点新噪声。每一步都这样，图越来越模糊、噪声越来越重，最后变成纯噪声。
+
+一般，我们把$\sqrt{\alpha_t}$叫做“信号系数”，$\sqrt{\beta_t}$叫做“噪声系数”。它们的选择会影响前向过程的速度和最终的噪声分布。两者平方和为1，这样每一步的输出 $x_t$ 的方差保持不变（不至于越来越大），也方便后续分析。
+
+一步步加噪太慢，我们想直接知道“第 $t$ 步的 $x_t$ 长什么样”。办法是把单步公式反复往里代入：
+
+\begin{align}
+x_t &= \sqrt{\alpha_t}\,x_{t-1} + \sqrt{\beta_t}\,\varepsilon_t \\
+&= \sqrt{\alpha_t}\big(\sqrt{\alpha_{t-1}}\,x_{t-2}+\sqrt{\beta_{t-1}}\,\varepsilon_{t-1}\big) + \sqrt{\beta_t}\,\varepsilon_t \\
+&= \sqrt{\alpha_t\alpha_{t-1}}\,x_{t-2} + \sqrt{\alpha_t\beta_{t-1}}\,\varepsilon_{t-1} + \sqrt{\beta_t}\,\varepsilon_t \\
+&\;\;\vdots \\
+&= \sqrt{\bar\alpha_t}\,x_0 \;+\; \underbrace{\sum_{s=1}^{t}\sqrt{\Big(\textstyle\prod_{j=s+1}^{t}\alpha_j\Big)\beta_s}\;\varepsilon_s}_{\text{所有步噪声的叠加}}.
+\end{align}
+噪声叠加项是若干个\textbf{相互独立、零均值}的高斯之和，因此它本身也是一个零均值高斯，其方差等于各项方差之和：
+\begin{equation}
+V_t = \sum_{s=1}^{t}\Big(\textstyle\prod_{j=s+1}^{t}\alpha_j\Big)\beta_s.
+\end{equation}
+用 $\beta_s = 1-\alpha_s$ 做“望远镜求和”：先看最后两项，
+\begin{equation}
+\beta_t + \alpha_t\beta_{t-1} = (1-\alpha_t) + \alpha_t(1-\alpha_{t-1}) = 1-\alpha_t\alpha_{t-1}.
+\end{equation}
+再并入 $\alpha_t\alpha_{t-1}\beta_{t-2}$ 项得 $1-\alpha_t\alpha_{t-1}\alpha_{t-2}$，依此类推，并到第 $1$ 步得 $V_t = 1-\bar\alpha_t$。于是
+\begin{equation}\label{eq:ddpm_reparam}
+x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\bar\varepsilon_t, \qquad \bar\varepsilon_t\sim\mathcal N(0,I),
+\end{equation}
+这个公式被叫做“跳步公式”，是DDPM原文的重要结论之一。
+
+这个公式的实际意义是非常显明的：随着 $t$ 增大，$\bar\alpha_t$ 越来越小，$x_t$ 里干净图 $x_0$ 的成分越来越弱、噪声 $\varepsilon$ 的成分越来越强；当 $t$ 足够大时，$\bar\alpha_t \approx 0$，$x_t$ 就完全变成了纯噪声。
+
+\paragraph{反向过程}
+
+生成时则需要反着来。从纯噪声 $x_T$ 出发，一步步还原回干净图 $x_0$。怎么还原？
+
+注意到单步公式\cref{eq:ddpm_forward} 里，$x_t$ 的唯一未知量是 $\varepsilon_t$。如果我们知道了 $\varepsilon_t$，就可以直接解出 $x_{t-1}$：
+\begin{equation}\label{eq:reverse_alg}
+x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\big(x_t - \sqrt{\beta_t}\,\varepsilon_t\big). 
+\end{equation}
+也就是说：如果知道这一步加的噪声 $\varepsilon_t$，反向就是精确可解的。问题在于生成时手上只有 $x_t$，不知道 $\varepsilon_t$。自然的办法是训练一个网络 $\varepsilon_\theta(x_t,t)$ 从 $x_t$ 估计 $\varepsilon_t$，再据\cref{eq:reverse_alg}定义反向一步的（均值）：
+\begin{equation}\label{eq:ddpm_reverse}
+\hat x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\big(x_t - \sqrt{\beta_t}\,\varepsilon_\theta(x_t,t)\big).
+\end{equation}
+训练目标是让 $\hat x_{t-1}$ 逼近真实的 $x_{t-1}$。把\cref{eq:reverse_alg}与 $\hat x_{t-1}$ 相减，$x_t$ 项消去：
+\begin{equation}\label{eq:ddpm_loss}
+\mathbb E\big\|x_{t-1}-\hat x_{t-1}\big\|^2
+= \mathbb E\Big\|\tfrac{1}{\sqrt{\alpha_t}}\sqrt{\beta_t}\,(\varepsilon_t-\varepsilon_\theta(x_t,t))\Big\|^2
+= \frac{\beta_t}{\alpha_t}\,\mathbb E\big\|\varepsilon_t-\varepsilon_\theta(x_t,t)\big\|^2.
+\end{equation}
+于是训练目标便是：\textbf{让网络预测这一步的噪声 $\varepsilon_t$}，前面的 $\beta_t/\alpha_t$ 只是一个随 $t$ 变化的权重。
+
+上式还留有一个不易察觉的问题：损失 $\|\varepsilon_t-\varepsilon_\theta(x_t,t)\|^2$ 里，网络输入 $x_t$ 其实\textbf{不只依赖 $\varepsilon_t$}。把 $x_t$ 展开：
+\begin{equation}
+x_t = \sqrt{\alpha_t}\,x_{t-1}+\sqrt{\beta_t}\,\varepsilon_t,\qquad
+x_{t-1} = \sqrt{\bar\alpha_{t-1}}\,x_0 + \sqrt{1-\bar\alpha_{t-1}}\,\bar\varepsilon_{t-1},
+\end{equation}
+代入得
+\begin{equation}
+x_t = \sqrt{\bar\alpha_t}\,x_0 \;+\; \underbrace{\sqrt{\alpha_t(1-\bar\alpha_{t-1})}\;\bar\varepsilon_{t-1} \;+\; \sqrt{\beta_t}\;\varepsilon_t}_{\text{总噪声}}.
+\end{equation}
+网络看到的 $x_t$ 同时混入了两个独立高斯 $\bar\varepsilon_{t-1}$（之前各步的总噪声）和 $\varepsilon_t$（最后一步噪声），却被要求只还原 $\varepsilon_t$。由于不同的 $(\bar\varepsilon_{t-1},\varepsilon_t)$ 可以给出同一个 $x_t$，网络无法唯一确定 $\varepsilon_t$。那么最优的 $\varepsilon_\theta$ 究竟收敛到什么？
+
+用一次正交变量替换解决。记 $a=\sqrt{\alpha_t(1-\bar\alpha_{t-1})}$、$b=\sqrt{\beta_t}$。直接验证 $a^2+b^2 = \alpha_t(1-\bar\alpha_{t-1})+\beta_t = \alpha_t-\bar\alpha_t+(1-\alpha_t) = 1-\bar\alpha_t$。把 $(\bar\varepsilon_{t-1},\varepsilon_t)$ 旋转成新的一对变量——\textbf{总噪声} $\bar\varepsilon_t$ 与一个正交伴随量 $\omega$：
+\begin{equation}
+\bar\varepsilon_t = \frac{a\,\bar\varepsilon_{t-1}+b\,\varepsilon_t}{\sqrt{1-\bar\alpha_t}},
+\qquad
+\omega = \frac{-\,b\,\bar\varepsilon_{t-1}+a\,\varepsilon_t}{\sqrt{1-\bar\alpha_t}}.
+\end{equation}
+变换矩阵 $\dfrac{1}{\sqrt{1-\bar\alpha_t}}\begin{pmatrix}a&b\\-b&a\end{pmatrix}$ 是正交矩阵（因 $a^2+b^2=1-\bar\alpha_t$），所以 $(\bar\varepsilon_t,\omega)$ 仍是一对相互独立的标准高斯。
+
+正交矩阵的逆是其转置，反解得 $\varepsilon_t = \dfrac{b\,\bar\varepsilon_t + a\,\omega}{\sqrt{1-\bar\alpha_t}}$。
+
+代入损失：
+\begin{equation}
+\mathbb E\big\|\varepsilon_t-\varepsilon_\theta\big\|^2
+= \mathbb E\Big\|\tfrac{b}{\sqrt{1-\bar\alpha_t}}\,\bar\varepsilon_t + \tfrac{a}{\sqrt{1-\bar\alpha_t}}\,\omega-\varepsilon_\theta\Big\|^2.
+\end{equation}
+因为 $\omega$ 与 $x_t$（从而与 $\bar\varepsilon_t$、$\varepsilon_\theta$）独立且零均值，含 $\omega$ 的交叉项期望为 $0$，$\|\omega\|^2$ 项是与 $\theta$ 无关的常数。于是
+\begin{equation}
+\mathbb E\big\|\varepsilon_t-\varepsilon_\theta\big\|^2
+= \mathbb E\Big\|\tfrac{b}{\sqrt{1-\bar\alpha_t}}\,\bar\varepsilon_t-\varepsilon_\theta\Big\|^2 + \text{const}.
+\end{equation}
+
+所以，预测“单步噪声 $\varepsilon_t$”与预测“总噪声 $\bar\varepsilon_t$”，最优网络只差一个已知的、随 $t$ 变化的标量 $b/\sqrt{1-\bar\alpha_t}=\sqrt{\beta_t/(1-\bar\alpha_t)}$。因此完全可以让网络直接预测总噪声 $\bar\varepsilon_t$。把这个标量、以及前面的 $\beta_t/\alpha_t$ 权重，统统并入“每个 $t$ 的损失权重”并简单地取为 $1$，就得到 DDPM 的简化损失：
+\begin{equation}
+\mathcal L_{\text{DDPM}}(\theta)=\mathbb E_{t,\,x_0,\,\bar\varepsilon}\big\|\bar\varepsilon-\varepsilon_\theta(x_t,t)\big\|^2,
+\qquad x_t=\sqrt{\bar\alpha_t}\,x_0+\sqrt{1-\bar\alpha_t}\,\bar\varepsilon
+\end{equation}
+
+\subsection{得分}
+
+上述推导有一个明确结论：DDPM 的网络在预测噪声 $\varepsilon$。现在追问一句——这个“噪声”到底是什么？为什么预测它就能生成数据？
+
+把跳步公式 \cref{eq:ddpm_reparam} 反解，$\varepsilon = (x_t - \sqrt{\bar\alpha_t}\,x_0)/\sqrt{1-\bar\alpha_t}$，可见它正比于 $x_t - \sqrt{\bar\alpha_t}\,x_0$，也就是“带噪样本 $x_t$ 偏离干净数据的方向”。这个“偏离方向”能被一个不依赖 DDPM 的、纯概率论的量精确刻画，它就是\textbf{得分}。
+
+\begin{definition}[得分函数]
+对一个概率密度 $p(x)$（$x \in \mathbb{R}^d$，$p(x) > 0$），定义它的得分函数为对数密度关于数据 $x$ 的梯度：
+\begin{equation}\label{eq:score_def}
+\boxed{\; s(x) \;:=\; \nabla_x \log p(x) \;=\; \frac{\nabla_x p(x)}{p(x)} \;}
+\end{equation}
+\end{definition}
+
+
+注意几点：
+\begin{itemize}
+\item 它是一个\textbf{向量场}：每个点 $x$ 处返回一个 $d$ 维向量。
+\item 这里的梯度是对\textbf{随机变量 $x$} 求的，\textbf{不是}对参数求的。统计学里另有一个“对参数求导”的 Fisher score，但生成模型语境下“score”一律指的是\cref{eq:score_def}。
+\item 它\textbf{与归一化常数无关}。若 $p(x) = \tilde{p}(x) / Z$，其中 $Z = \int \tilde p(x)\,dx$ 是与 $x$ 无关的归一化常数，则
+\begin{equation}
+\nabla_x \log p(x) = \nabla_x \log \tilde{p}(x) - \underbrace{\nabla_x \log Z}_{=\,0} = \nabla_x \log \tilde{p}(x).
+\end{equation}
+这条性质极其重要：建模概率密度的最大困难是配分函数 $Z$ 通常算不出来，而\textbf{得分把 $Z$ 直接消掉了}。这就是“基于得分的生成模型”整条路线存在的理由。
+\item 几何意义：$\nabla_x \log p(x)$ 指向“对数概率密度上升最快”的方向。在数据点密集处它指向数据流形，在低密度处它指向高密度区。
+\begin{mdframed}[frametitle=例：得分与归一化常数无关]
+    设未归一化函数 $\tilde p(x)=e^{-x^4}$，真实密度 $p(x)=\tilde p(x)/Z$，$Z=\int e^{-x^4}dx$ 没有初等闭式。但得分根本不需要 $Z$：$\log\tilde p(x)=-x^4$，故 $\nabla_x\log p(x)=\nabla_x\log\tilde p(x)=-4x^3$。这就是“得分把配分函数消掉”的实例。
+\end{mdframed}
+\end{itemize}
+
+\begin{mdframed}[frametitle=例：高斯函数的得分]
+设 $x\in\mathbb{R}^d$，$p(x) = \mathcal{N}(x; \mu, \sigma^2 I)$，其中 $\mu\in\mathbb{R}^d$ 是均值、$\sigma^2 I$ 是协方差矩阵（各维独立、方差同为 $\sigma^2$）。下面逐步把得分 $\nabla_x\log p(x)$ 算出来。
+
+$d$ 维各向同性高斯的密度为
+\begin{equation}
+p(x) = \frac{1}{(2\pi\sigma^2)^{d/2}}\,\exp\!\Big(-\frac{\|x-\mu\|^2}{2\sigma^2}\Big),
+\end{equation}
+其中 $\|x-\mu\|^2 = \sum_{i=1}^d (x_i-\mu_i)^2$ 是欧氏距离的平方。
+
+利用对数，把指数和系数拆成相加的两项：
+\begin{equation}
+\log p(x) = -\frac{\|x-\mu\|^2}{2\sigma^2} \;\underbrace{-\;\frac{d}{2}\log(2\pi\sigma^2)}_{\text{与 }x\text{ 无关，记为 const}}.
+\end{equation}
+第二项不含 $x$，求梯度时会变成 $0$，所以常写成 $\log p(x) = -\dfrac{\|x-\mu\|^2}{2\sigma^2} + \text{const}$。这也再次印证了得分与归一化常数无关。
+
+现在对$x$求梯度，只需对第一项求梯度。先看单个分量 $x_j$：因为 $\|x-\mu\|^2=\sum_i (x_i-\mu_i)^2$ 中只有 $i=j$ 那一项含 $x_j$，
+\begin{equation}
+\frac{\partial}{\partial x_j}\,\|x-\mu\|^2 = \frac{\partial}{\partial x_j}\,(x_j-\mu_j)^2 = 2(x_j-\mu_j).
+\end{equation}
+把各分量拼成向量，即 $\nabla_x\|x-\mu\|^2 = 2(x-\mu)$。于是
+\begin{equation}
+\nabla_x\log p(x) = \nabla_x\Big(-\frac{\|x-\mu\|^2}{2\sigma^2}\Big) = -\frac{1}{2\sigma^2}\cdot 2(x-\mu),
+\end{equation}
+化简得到
+\begin{equation}\label{eq:gaussian_score}
+\boxed{\;\nabla_x \log p(x) = -\frac{x - \mu}{\sigma^2}.\;}
+\end{equation}
+
+现在利用一个特例来核对上述计算的正确性。当 $d=1$ 时，$\log p(x)=-\dfrac{(x-\mu)^2}{2\sigma^2}+\text{const}$，普通求导 $\dfrac{\mathrm d}{\mathrm dx}\big[-(x-\mu)^2/(2\sigma^2)\big]=-(x-\mu)/\sigma^2$，与式\cref{eq:gaussian_score} 一致。例如 $\mathcal N(0,1)$（$\mu=0,\sigma=1$）的得分就是 $-x$；$\mathcal N(3,4)$（$\mu=3,\sigma^2=4$）的得分是 $-(x-3)/4$。
+
+式\cref{eq:gaussian_score} 是一个向量场：在点 $x$ 处它等于 $-(x-\mu)/\sigma^2$，方向由 $x$ 指回均值 $\mu$，长度正比于偏离量 $\|x-\mu\|$、反比于方差 $\sigma^2$。也就是说得分处处指向 $\mu$，离 $\mu$ 越远箭头越长；方差越大、分布越平坦，同样偏离处的得分越小。这个结果后面会反复用到（去噪得分匹配、DDPM 与得分的换算都依赖它）。
+
+\end{mdframed}
+
+若协方差不是 $\sigma^2 I$ 而是一般正定矩阵 $\Sigma$，即 $p(x)=\mathcal N(x;\mu,\Sigma)$，则 $\log p(x)=-\tfrac12(x-\mu)^\top\Sigma^{-1}(x-\mu)+\text{const}$，同样求梯度得 $\nabla_x\log p(x)=-\Sigma^{-1}(x-\mu)$。式\cref{eq:gaussian_score} 是 $\Sigma=\sigma^2 I$ 的特例（此时 $\Sigma^{-1}=\sigma^{-2}I$）。这一节为了简化，我们只考虑这种各向同性的式子。
+
+\begin{mdframed}[frametitle=例：高斯混合的得分]
+设一维分布是两个高斯的等权混合：$p(x)=\tfrac12\mathcal N(x;-3,1)+\tfrac12\mathcal N(x;3,1)$，即数据集中在 $-3$ 和 $+3$ 两处。它的得分 $\nabla_x\log p(x)$ 可以逐点算出来，定性结果为：
+\begin{itemize}
+\item 在 $x=-3$ 附近，得分指向 $-3$（把样本拉向左峰）；
+\item 在 $x=+3$ 附近，得分指向 $+3$（把样本拉向右峰）；
+\item 在 $x=0$（两峰正中、密度极低处），由对称性得分为 $0$；
+\item 在 $x=5$ 这种右峰外侧，得分为负，把样本往回拉向 $+3$。
+\end{itemize}
+可见得分场把整条实轴划成两个“吸引域”，分别流向两个峰。这正是得分做采样的依据：沿得分方向走，样本自然会聚到高密度区。
+
+三个子图自上而下分别是：
+\begin{itemize}
+\item \textbf{上}：密度 $p(x)$，两个峰位于 $\mu_1=-3$、$\mu_2=+3$。
+\item \textbf{中}：得分 $\nabla_x\log p(x)$，并标出本例讨论的四个点。可读出 $x=-3$ 与 $x=+3$（两个峰）以及 $x=0$（对称中点）处得分均为 $0$；$x=5$ 处得分为 $-2.00$（为负，把样本往回拉向 $+3$）。注意三处零点的性质不同：两个峰是\textbf{稳定}零点（附近得分指向它），中点 $x=0$ 是\textbf{不稳定}零点（附近得分背离它）。
+\item \textbf{下}：把得分画成一维向量场，箭头方向即得分符号——所有箭头都指向最近的峰（黑色五角星），整条实轴被两个峰的“吸引域”瓜分，分界正在 $x=0$。
+\end{itemize}
+\end{mdframed}
+
+\subsection{Langevin 动力学}
+
+为什么我们想要得分？因为只要知道某个分布 $p$ 的得分，就能从 $p$ 中采样，不需要知道 $p$ 的归一化密度。所用的工具是 \textbf{Langevin 动力学（Langevin dynamics）}。
+
+给定步长 $\eta > 0$，从任意初始点 $x^{(0)}$ 出发，迭代：
+\begin{equation}\label{eq:langevin}
+x^{(k+1)} = x^{(k)} + \frac{\eta}{2}\, \nabla_x \log p\big(x^{(k)}\big) + \sqrt{\eta}\, z^{(k)}, \qquad z^{(k)} \sim \mathcal{N}(0, I)
+\end{equation}
+可以证明：在步长 $\eta$ 足够小、迭代步数足够多、并且 $p$ 满足一定正则条件时，$x^{(k)}$ 的分布会收敛到 $p$。
+
+直观上理解，\cref{eq:langevin} 由两项构成。漂移项 $\frac{\eta}{2}\nabla_x\log p$ 把样本推向高概率区域；噪声项 $\sqrt{\eta}\,z$ 防止样本全部塌缩到密度的极大值点，使其按 $p$ 的形状散开。两者平衡时，样本的分布恰好是 $p$。
+
+\begin{mdframed}[frametitle=例：一维高斯的 Langevin 采样]
+    设目标 $p=\mathcal N(0,1)$，其得分为 $\nabla_x\log p(x)=-x$（\cref{eq:gaussian_score}  取 $\mu=0,\sigma=1$）。代入\cref{eq:langevin} 得：
+\begin{equation}
+x^{(k+1)} = x^{(k)} - \tfrac{\eta}{2}x^{(k)} + \sqrt{\eta}\,z^{(k)} = \big(1-\tfrac{\eta}{2}\big)x^{(k)} + \sqrt{\eta}\,z^{(k)}.
+\end{equation}
+取 $\eta=0.1$、初始 $x^{(0)}=10$（一个离均值很远的点）：漂移项 $-\tfrac{\eta}{2}x$ 每步把 $x$ 乘以 $0.95$，于是 $x$ 按几何速率衰减回 $0$ 附近；同时 $\sqrt{\eta}\,z$ 持续注入抖动。迭代足够多步后，$x^{(k)}$ 的分布会稳定在 $\mathcal N(0,1)$——可以验证它的不动方差满足 $\mathrm{Var}=(1-\eta/2)^2\mathrm{Var}+\eta$，当 $\eta$ 很小时解出 $\mathrm{Var}\approx1$，与目标一致。若去掉噪声项，$x$ 会一路衰减到 $0$ 不动，得到的是单点而非分布。这说明噪声项不可省略。
+\end{mdframed}
+
+\begin{mdframed}[frametitle=例：假如得分估计错误]
+    接上例，若把得分误估成 $-2x$（强度翻倍），迭代变为 $x^{(k+1)}=(1-\eta)x^{(k)}+\sqrt\eta z^{(k)}$，稳态方差解得约为 $1/2$，采出的样本分布变成 $\mathcal N(0,1/2)$ 而非 $\mathcal N(0,1)$。这说明：Langevin 采样的正确性完全依赖得分估计的准确性。
+\end{mdframed}
+
+本节充分说明了：只要有得分，Langevin 动力学就能采样，不必依赖DDPM。这提示我们，存在一条与DDPM的显式逆过程不同的“得分 + Langevin”路线：先学得分，再用 Langevin 采样。
+
+这条路线还剩最后一个缺口：$p_{\text{data}}$ 的得分 $\nabla_x \log p_{\text{data}}(x)$ 我们并不知道，只有数据样本，如何把得分从样本里学出来？这个过程，就是下文所讨论的“得分匹配”。
+
+\section{得分匹配}
+
+\subsection{显式得分匹配及其困难}
+
+最直接的想法自然是让网络输出 $s_\theta(x)$ 去回归真实得分。定义显式得分匹配损失：
+\begin{equation}\label{eq:explicit_score_matching}
+J_{\text{ESM}}(\theta) = \frac{1}{2}\, \mathbb{E}_{x \sim p(x)}\Big[\, \big\| s_\theta(x) - \nabla_x \log p(x) \big\|^2 \,\Big].
+\end{equation}
+这里 $p$ 暂时泛指我们想匹配其得分的那个分布。
+
+困难是显然的：式\cref{eq:explicit_score_matching} 里出现了 $\nabla_x \log p(x)$，而这正是我们不知道、想要学的东西。所以 $J_{\text{ESM}}$ 不能直接拿来训练。
+
+\subsection{隐式得分匹配}
+
+式\cref{eq:explicit_score_matching} 可以通过分部积分，改写成一个\textbf{不含未知得分}的等价目标。\cite{JMLRv6hyvarinen05a}
+
+把式\cref{eq:explicit_score_matching} 的平方展开成三项：$\tfrac12\|s_\theta\|^2$、交叉项 $-\mathbb{E}_{p}[s_\theta^\top\nabla_x\log p]$、以及与 $\theta$ 无关的常数项，丢掉。麻烦只在交叉项——它含未知的 $\nabla_x\log p$。
+
+对这一项做一次分部积分：先用 $\nabla_x\log p=\nabla_x p/p$ 把它写成 $-\int s_\theta^\top\nabla_x p\,\mathrm dx$，再把对 $x$ 的求导从 $p$ 转移到 $s_\theta$ 上，边界项因 $p(x)$ 在无穷远处趋于 $0$ 而消失。
+
+这一步之后，未知的 $\nabla_x\log p$ 被彻底消去，交叉项变成只含网络自身的 $\mathbb{E}_p[\nabla_x\cdot s_\theta]$，其中 $\nabla_x\cdot s_\theta=\sum_i\partial_{x_i}s_{\theta,i}$ 是散度。
+
+于是得到隐式得分匹配目标：
+\begin{equation}\label{eq:implicit_score_matching}
+\boxed{\;
+J_{\text{ISM}}(\theta) = \mathbb{E}_{p(x)}\Big[\, \tfrac{1}{2}\|s_\theta(x)\|^2 + \nabla_x \cdot s_\theta(x) \,\Big] = J_{\text{ESM}}(\theta) + \text{与 }\theta\text{ 无关的常数}.
+\;}
+\end{equation}
+\cref{eq:implicit_score_matching} 里只剩 $s_\theta$ 自身和它的散度，真实得分消失了，期望可以直接用训练样本做蒙特卡洛估计。
+
+但它仍有实践困难：散度项 $\nabla_x \cdot s_\theta = \operatorname{tr}(\nabla_x s_\theta)$ 需要算网络输出对输入的雅可比矩阵的迹。对 $d$ 维数据，精确计算需要 $d$ 次反向传播，当 $d$ 是几十万（例如图像）时无法承受。后来的“切片得分匹配”\cite{song2020generativemodelingestimatinggradients}用随机投影把迹估计成 $\mathbb{E}_v[v^\top \nabla_x s_\theta\, v]$，其中$v$ 为随机向量，把成本降到一次反向传播，解决了这个问题；但真正在扩散模型里被广泛使用的，是下一节的另一条路线。
+
+\subsection{去噪得分匹配}
+
+我们知道，真实数据（尤其是图像这类高维数据）我们通常只有有限的训练样本，经验分布是一堆离散点，而真实数据又常集中在低维流形附近——想对 $p_{\text{data}}$ 写出一个处处光滑、可求梯度的密度并不现实。
+
+我们从巧克力的制作方式得到启发。可可豆本身并不好吃，因为其风味物质和可可脂的含量比例不适合人类口味。后来人们找到了天才一般的工艺：先将可可豆里的风味物质（可可粉）和可可脂分离，然后按人类能够接受的比例重新混合，于是得到了巧克力！我们为什么不能对数据做类似的“加工”，让它变得更好学呢？
+
+所以先给数据加一点已知的高斯噪声：加噪会把分布抹平，得分随之变成一个处处更稳定、可学习的对象。于是我们改去学“被加噪后的分布”的得分，随后再把噪声去掉。这个思路就是去噪得分匹配\textcite{vincent2011connection}。
+
+取一个噪声尺度 $\sigma > 0$。定义加噪的条件分布（加噪核）
+\begin{equation}
+q_\sigma(\tilde{x} \mid x) = \mathcal{N}(\tilde{x};\, x,\, \sigma^2 I),
+\end{equation}
+以及加噪后的边缘分布
+\begin{equation}
+q_\sigma(\tilde{x}) = \int q_\sigma(\tilde{x}\mid x)\, p_{\text{data}}(x)\, dx.
+\end{equation}
+我们的目标改成：学 $q_\sigma$ 的得分，即训练 $s_\theta(\tilde x) \approx \nabla_{\tilde x}\log q_\sigma(\tilde x)$。当 $\sigma$ 足够小时，$q_\sigma \approx p_{\text{data}}$，所以这是个合理的代理目标。
+
+定义下式为去噪得分匹配损失：
+\begin{equation}\label{eq:denoising_score_matching}
+J_{\text{DSM}}(\theta) = \frac{1}{2}\,\mathbb{E}_{x\sim p_{\text{data}}}\;\mathbb{E}_{\tilde x \sim q_\sigma(\cdot\mid x)}
+\Big[\, \big\| s_\theta(\tilde x) - \nabla_{\tilde x}\log q_\sigma(\tilde x\mid x) \big\|^2 \,\Big].
+\end{equation}
+注意\cref{eq:denoising_score_matching}里的回归目标是 $\nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)$，它是一个条件得分，可以解析！因为 $q_\sigma(\tilde x\mid x)$ 是已知的高斯，由式\cref{eq:gaussian_score} 可得
+\begin{equation}\label{eq:denoising_score}
+\nabla_{\tilde x}\log q_\sigma(\tilde x \mid x) = -\frac{\tilde x - x}{\sigma^2}.
+\end{equation}
+若写 $\tilde x = x + \sigma\varepsilon$（$\varepsilon\sim\mathcal N(0,I)$），则 $\nabla_{\tilde x}\log q_\sigma(\tilde x\mid x) = -\varepsilon/\sigma$。
+
+先证明一个定理\cite{vincent2011connection}，说明去噪得分匹配与显式得分匹配的关系。
+\begin{theorem}\label{thm:denoising_score_matching}
+    去噪得分匹配损失 $J_{\text{DSM}}(\theta)$ 与显式得分匹配损失 $J_{\text{ESM}}^{q_\sigma}(\theta)$（对 $q_\sigma$ 的显式得分匹配）只差一个与 $\theta$ 无关的常数：
+\begin{equation}
+\boxed{\; J_{\text{DSM}}(\theta) = J_{\text{ESM}}^{q_\sigma}(\theta) + \text{const} \;}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+只需证两个损失关于 $\theta$ 的部分相等。展开 $J_{\text{ESM}}^{q_\sigma}$ 的平方，含 $\theta$ 的项是
+\begin{equation}
+\mathbb{E}_{q_\sigma(\tilde x)}\Big[\tfrac12\|s_\theta(\tilde x)\|^2\Big]
+\;-\; \underbrace{\mathbb{E}_{q_\sigma(\tilde x)}\big[s_\theta(\tilde x)^\top \nabla_{\tilde x}\log q_\sigma(\tilde x)\big]}_{=:\,B}.
+\end{equation}
+展开 $J_{\text{DSM}}$ 的平方，含 $\theta$ 的项是
+\begin{equation}
+\mathbb{E}_{p_{\text{data}}(x)\,q_\sigma(\tilde x\mid x)}\Big[\tfrac12\|s_\theta(\tilde x)\|^2\Big]
+\;-\; \underbrace{\mathbb{E}_{p_{\text{data}}(x)\,q_\sigma(\tilde x\mid x)}\big[s_\theta(\tilde x)^\top \nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)\big]}_{=:\,B'}.
+\end{equation}
+第一项二者显然相等（对 $x$ 再积分一次不改变只含 $\tilde x$ 的被积函数的期望）。只需证交叉项 $B = B'$。把 $B$ 中的得分写成密度比：
+\begin{align}
+B &= \int q_\sigma(\tilde x)\, s_\theta(\tilde x)^\top \frac{\nabla_{\tilde x} q_\sigma(\tilde x)}{q_\sigma(\tilde x)}\, d\tilde x
+= \int s_\theta(\tilde x)^\top \nabla_{\tilde x} q_\sigma(\tilde x)\, d\tilde x.
+\end{align}
+对 $\nabla_{\tilde x} q_\sigma(\tilde x)$ 用边缘分布定义并把梯度移进积分：
+\begin{equation}
+\nabla_{\tilde x} q_\sigma(\tilde x)
+= \nabla_{\tilde x}\!\int q_\sigma(\tilde x\mid x)\,p_{\text{data}}(x)\,dx
+= \int p_{\text{data}}(x)\,\nabla_{\tilde x} q_\sigma(\tilde x\mid x)\,dx.
+\end{equation}
+再用恒等式 $\nabla_{\tilde x} q_\sigma(\tilde x\mid x) = q_\sigma(\tilde x\mid x)\,\nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)$：
+\begin{equation}
+\nabla_{\tilde x} q_\sigma(\tilde x) = \int p_{\text{data}}(x)\,q_\sigma(\tilde x\mid x)\,\nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)\,dx.
+\end{equation}
+代回 $B$：
+\begin{align}
+B &= \int\!\!\int s_\theta(\tilde x)^\top\, p_{\text{data}}(x)\,q_\sigma(\tilde x\mid x)\,\nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)\, dx\, d\tilde x = B'.
+\end{align}
+于是 $B = B'$，两个损失只差与 $\theta$ 无关的常数，定理得证。
+\end{proof}
+
+既然上述定理是成立的，那么其最优解满足
+\begin{equation}
+s_{\theta^\star}(\tilde x) = \nabla_{\tilde x}\log q_\sigma(\tilde x)
+\end{equation}
+
+上面的证明还顺带给出一个非常有用的恒等式。最优网络 $s_{\theta^\star}(\tilde x) = \nabla_{\tilde x}\log q_\sigma(\tilde x)$ 是 $J_{\text{DSM}}$ 的最小值点，而 $J_{\text{DSM}}$ 是一个针对回归目标 $\nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)$ 的最小二乘问题。最小二乘的最优解就是\textbf{条件期望}，因此下列定理成立：
+\begin{theorem}
+    对任意噪声尺度 $\sigma > 0$，加噪后的边缘分布的得分等于条件得分在后验 $q_\sigma(x\mid\tilde x)$ 下的条件期望：
+\begin{equation}\label{eq:denoising_score_matching_identity}
+\boxed{\;
+\nabla_{\tilde x}\log q_\sigma(\tilde x)
+= \mathbb{E}_{x \sim q_\sigma(x\mid \tilde x)}\big[\, \nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)\,\big]
+\;}
+\end{equation}
+\end{theorem}
+
+\begin{mdframed}[frametitle=例：两个数据点的去噪得分匹配]
+取最小的数据集：只有两个一维数据点 $x^{(1)}=-3$、$x^{(2)}=+3$，各占概率 $1/2$。噪声尺度 $\sigma=1$。
+
+由\cref{eq:denoising_score}，加噪后的条件分布是 $q_\sigma(\tilde x\mid x^{(j)})=\mathcal N(\tilde x;x^{(j)},1)$，所以，对某个带噪样本 $\tilde x$，
+\begin{itemize}
+\item 若它来自 $x^{(1)}=-3$：条件得分 $=-(\tilde x-(-3))/\sigma^2=-(\tilde x+3)$；
+\item 若它来自 $x^{(2)}=+3$：条件得分 $=-(\tilde x-3)$。
+\end{itemize}
+训练时网络看到的就是这两个目标之一。
+
+加噪后的边缘分布是两个高斯的混合 $q_\sigma(\tilde x)=\tfrac12\mathcal N(\tilde x;-3,1)+\tfrac12\mathcal N(\tilde x;3,1)$。按\cref{eq:denoising_score_matching_identity}，它的边缘得分是两个条件得分按后验权重的加权平均：
+\begin{equation}
+\nabla\log q_\sigma(\tilde x)=w_1(\tilde x)\cdot\big[-(\tilde x+3)\big]+w_2(\tilde x)\cdot\big[-(\tilde x-3)\big],
+\end{equation}
+权重 $w_j(\tilde x)=q_\sigma(x^{(j)}\mid\tilde x)$ 是后验概率（由 Bayes 公式，$w_j\propto\mathcal N(\tilde x;x^{(j)},1)$，且 $w_1+w_2=1$）。
+
+下面带入几个具体的点检验：
+\begin{itemize}
+\item 取 $\tilde x=-3$：此处离左点近，后验 $w_1\approx0.9997$、$w_2\approx0.0003$。边缘得分 $\approx0.9997\times0+0.0003\times6\approx0.002$——几乎为 $0$，说明 $\tilde x=-3$ 接近左峰的中心。
+\item 取 $\tilde x=0$：由对称性 $w_1=w_2=0.5$，边缘得分 $=0.5\times(-3)+0.5\times(3)=0$——两峰正中得分为 $0$。
+\item 取 $\tilde x=1$：$w_1\propto\mathcal N(1;-3,1)$ 很小、$w_2\propto\mathcal N(1;3,1)$ 较大，算得 $w_2\approx0.9997$，边缘得分 $\approx0.9997\times(-(1-3))\approx2.0$——为正，把样本往右峰 $+3$ 推。
+\end{itemize}
+这个例子把第 2 章的全部要点都串起来了：网络在训练中每次只回归\emph{一个}条件得分（简单、可算），但因为损失是最小二乘、最优解是条件期望，网络最终收敛到的是\textbf{条件得分的加权平均}，也就是真正想要的边缘得分。
+\end{mdframed}
+
+\subsection{噪声尺度的退火}
+
+单一 $\sigma$ 有矛盾：$\sigma$ 太小，远离数据流形处得分估不准、Langevin 跑不动；$\sigma$ 太大，$q_\sigma$ 偏离 $p_{\text{data}}$ 太多。NCSN的解决办法是：取一列由大到小的噪声尺度 $\sigma_1 > \sigma_2 > \cdots > \sigma_L$，训练一个\textbf{以 $\sigma$ 为条件}的网络 $s_\theta(\tilde x, \sigma)$ 同时匹配所有尺度的得分\cite{song2020generativemodelingestimatinggradients} ：
+\begin{equation}
+J(\theta) = \frac{1}{L}\sum_{i=1}^{L}\lambda(\sigma_i)\;
+\mathbb{E}_{x,\,\tilde x}\Big[\big\| s_\theta(\tilde x, \sigma_i) + \tfrac{\tilde x - x}{\sigma_i^2}\big\|^2\Big],
+\end{equation}
+$\lambda(\sigma_i)$ 是各尺度的权重（常取 $\lambda(\sigma_i)=\sigma_i^2$ 以平衡量纲）。采样时用退火 Langevin 动力学：从最大 $\sigma_1$ 开始跑 Langevin，逐步切换到更小的 $\sigma$，最后在 $\sigma_L\approx 0$ 处得到样本。
+
+到这里，“一列噪声尺度 + 以尺度为条件的得分网络”这套结构，已经和 DDPM“一列时间步 + 以 $t$ 为条件的噪声网络”几乎一样了。
+
+\subsection{DDPM 的预测噪声就是预测得分}
+
+回到第 1 节那个问题：DDPM 的 $\varepsilon_\theta(x_t,t)$ 在逼近什么？
+
+DDPM 的前向跳步分布 $q(x_t\mid x_0)=\mathcal N(x_t;\sqrt{\bar\alpha_t}x_0,(1-\bar\alpha_t)I)$ 是一个高斯，由式\cref{eq:gaussian_score} 可得，它的\textbf{条件得分}为
+\begin{equation}
+\nabla_{x_t}\log q(x_t\mid x_0)
+= -\frac{x_t - \sqrt{\bar\alpha_t}\,x_0}{1-\bar\alpha_t}.
+\end{equation}
+而由重参数化 (1.1)，$x_t - \sqrt{\bar\alpha_t}x_0 = \sqrt{1-\bar\alpha_t}\,\varepsilon$，所以
+\begin{equation}\label{eq:ddpm_score}
+\nabla_{x_t}\log q(x_t\mid x_0) = -\frac{\varepsilon}{\sqrt{1-\bar\alpha_t}}
+\end{equation}
+把第 2.3 节的去噪得分匹配套到 DDPM 的加噪核上：训练网络匹配条件得分\cref{eq:ddpm_score}，最优解就是边缘得分 $\nabla_{x_t}\log q(x_t)$。而 DDPM 的损失\cref{eq:ddpm_loss} 也正是让 $\varepsilon_\theta$ 回归 $\varepsilon$，所以 DDPM 的 $\varepsilon_\theta$ 收敛到的就是条件期望 $\mathbb{E}[\varepsilon\mid x_t]$，也就是\textbf{条件得分的一个已知标量倍}。换句话说，DDPM 的训练目标和去噪得分匹配是等价的，只是参数化不同。
+让 $\varepsilon_\theta$ 回归 $\varepsilon$。对照式\cref{eq:ddpm_score}，二者只差一个与 $\theta$ 无关的因子 $-1/\sqrt{1-\bar\alpha_t}$。
+
+于是得到 DDPM 与 Score-based Model 之间的精确换算关系：
+\begin{equation}\label{eq:ddpm_score_conversion}
+\boxed{\;
+s_\theta(x_t, t) \;\approx\; \nabla_{x_t}\log q(x_t)
+\;=\; -\,\frac{\varepsilon_\theta(x_t, t)}{\sqrt{1-\bar\alpha_t}}
+\;}
+\end{equation}
+所以，DDPM 训练 $\varepsilon_\theta$“预测噪声”，与 NCSN 训练 $s_\theta$“预测得分”，是\textbf{同一件事的两种参数化}，差一个已知的、随 $t$ 变化的标量。再加一句由式\cref{eq:ddpm_score_conversion} 得到的解释：DDPM 的 $\varepsilon_\theta(x_t,t)$ 收敛到的其实是 $\mathbb{E}[\varepsilon\mid x_t]$——给定带噪样本 $x_t$，对所有可能注入的噪声 $\varepsilon$ 求条件期望。它学习的是平均而言的噪声方向。
+
+\begin{mdframed}[frametitle=例：DDPM 噪声预测与得分的数值换算]
+设某时间步 $t$ 的累积系数 $\bar\alpha_t=0.36$，则 $\sqrt{\bar\alpha_t}=0.6$、$\sqrt{1-\bar\alpha_t}=0.8$。取一个干净数据 $x_0=2$、一次具体的噪声 $\varepsilon=0.5$，由重参数化 (1.1) 得带噪样本
+\begin{equation}
+x_t=0.6\times2+0.8\times0.5=1.2+0.4=1.6.
+\end{equation}
+假设训练好的网络在这一点输出 $\varepsilon_\theta(x_t,t)=0.45$（接近真实 $\varepsilon=0.5$，因为它学的是条件期望、不是这一次的具体值）。由换算式\cref{eq:ddpm_score_conversion}，对应的得分估计为
+\begin{equation}
+s_\theta(x_t,t)=-\frac{\varepsilon_\theta}{\sqrt{1-\bar\alpha_t}}=-\frac{0.45}{0.8}\approx-0.56.
+\end{equation}
+也就是说，同一个网络、同一次前向，既可读作“预测出的噪声是 $0.45$”，也可读作“这一点的得分是 $-0.56$”。两种语言、一个网络。
+\end{mdframed}
+
+\section{SDE / ODE 统一框架}
+
+\begin{quote}
+\textbf{本章时间约定}：连续时间 $t\in[0,T]$（常取 $T=1$）。$t=0$ 是干净数据，$t=T$ 是纯噪声。注意这与第 4 章 Flow Matching 的约定相反。
+\end{quote}
+
+\subsection{前向 SDE}
+
+ODE（常微分方程）描述一条\textbf{确定性轨迹}：初始点定了，整条轨迹就完全定了；SDE（随机微分方程）描述一条\textbf{带随机扰动的轨迹}：即使初始点相同，每次运行也可能走出不同的路径。
+
+DDPM 的前向过程是“一步步加一点噪声”。当步数 $T\to\infty$、每步噪声 $\to 0$ 时，这个离散马尔可夫链收敛到一个随机微分方程（SDE）。一般形式的前向 SDE 写作
+\begin{equation}\label{eq:forward_sde}
+\mathrm{d}x = f(x, t)\,\mathrm{d}t + g(t)\,\mathrm{d}w
+\end{equation}
+各符号定义：
+\begin{itemize}
+\item $x = x(t)\in\mathbb{R}^d$ 是随时间演化的随机过程，$x(0)\sim p_{\text{data}}$。
+\item $f(x,t)\in\mathbb{R}^d$ 称为漂移系数，是确定性的演化方向。
+\item $g(t)\in\mathbb{R}$ 称为扩散系数，控制注入随机性的强度（此处取标量，可推广为矩阵）。
+\item $w = w(t)$ 是标准 Wiener 过程：$\mathrm{d}w$ 可理解为 $\mathcal N(0, \mathrm{d}t\, I)$ 的无穷小高斯增量。
+\end{itemize}
+记 $p_t(x)$ 为 $x(t)$ 的边缘分布。前向 SDE 的设计要保证：$p_0=p_{\text{data}}$，而 $p_T$ 接近一个已知的、与数据无关的简单分布（高斯）。
+
+\subsection{DDPM、NCSE和SDE的统一}
+
+取VP-SDE（对应DDPM）：
+\begin{equation}
+f(x,t) = -\tfrac12\,\beta(t)\,x, \qquad g(t) = \sqrt{\beta(t)},
+\end{equation}
+其中 $\beta(t)>0$ 是连续版的噪声调度。可以解出其跳步边缘分布仍是高斯：
+\begin{equation}
+p_t(x\mid x_0) = \mathcal N\!\Big(x;\; x_0\,e^{-\frac12\int_0^t\beta(s)ds},\;\big(1 - e^{-\int_0^t\beta(s)ds}\big)I\Big).
+\end{equation}
+令 $\bar\alpha_t = e^{-\int_0^t\beta(s)ds}$，这就和 DDPM 的 $q(x_t\mid x_0)=\mathcal N(\sqrt{\bar\alpha_t}x_0,(1-\bar\alpha_t)I)$ 完全对应。
+
+取VE-SDE（对应NCSN）：
+\begin{equation}
+f(x,t) = 0, \qquad g(t) = \sqrt{\tfrac{\mathrm{d}[\sigma^2(t)]}{\mathrm{d}t}},
+\end{equation}
+则 $p_t(x\mid x_0)=\mathcal N(x; x_0, \sigma^2(t)I)$，即不缩放信号、只不断加大噪声。$\sigma(t)$ 随 $t$ 增长，方差“爆炸”。
+
+这说明，DDPM和NCSN的前向过程都可以写成 SDE 的形式，差别只在于 $f$ 和 $g$ 的选择。
+
+\subsection{逆向 SDE}
+
+生成需要把前向过程\textbf{反向}：从 $p_T$（噪声）出发，回到 $p_0$（数据）。Anderson（1982）的定理给出：式\cref{eq:forward_sde}的前向 SDE，存在一个\textbf{逆向 SDE}，它产生的过程具有与前向过程完全相同的边缘分布序列 $\{p_t\}$，只是时间反着走：
+\begin{equation}\label{eq:reverse_sde}
+\boxed{\;
+\mathrm{d}x = \big[\,f(x,t) - g(t)^2\,\nabla_x\log p_t(x)\,\big]\,\mathrm{d}t + g(t)\,\mathrm{d}\bar w
+\;}
+\end{equation}
+其中 $\mathrm{d}t$ 此时为负向时间增量，$\bar w$ 是反向时间的 Wiener 过程。具体地说，q采样时从 $t=T$ 出发、每步令 $t\leftarrow t-\Delta t$，所以式中的 $\mathrm dt$ 取负值。也可以换元 $\tau = T-t$，把反向过程写成关于 $\tau$ 的正向积分——两种写法完全等价，只是记号不同。
+
+\cref{eq:reverse_sde}里唯一未知的量就是 $\nabla_x\log p_t(x)$——边缘分布的得分。一旦我们用第 2 章的去噪得分匹配训练出 $s_\theta(x,t)\approx\nabla_x\log p_t(x)$，把它代进\cref{eq:reverse_sde}，就能从噪声反向积分采样。
+
+这就把“采样”彻底归约为“估计每个时刻的得分”。DDPM 的反向过程、NCSN 的退火 Langevin，都是这条逆向 SDE 在不同 $f,g$ 下、用不同数值格式离散化的特例。
+
+逆向 SDE 中各项的作用：$f(x,t)$ 是确定性漂移；$-g(t)^2\nabla_x\log p_t(x)$ 把样本拉向当前时刻分布的高密度区（得分项）；$g(t)\mathrm{d}\bar w$ 重新注入随机性以保证覆盖整个 $p_t$。
+
+\subsection{概率流 ODE}
+
+逆向 SDE 每一步都带随机噪声。一个自然的问题是：\textbf{能不能找一个完全确定性的过程（ODE），让它的边缘分布序列仍然是同一条 $\{p_t\}$？} 
+
+
+答案是能。事实上存在定理：
+\begin{theorem}\label{thm:probability_flow_ode}
+    对任意前向 SDE\cref{eq:forward_sde}，存在一个确定性 ODE $\frac{\mathrm dx}{\mathrm dt}=v(x,t)$，它的边缘分布序列 $\{p_t\}$ 与原 SDE 完全相同，被称作即概率流常微分方程\cite{song2021scorebasedgenerativemodelingstochastic}：
+\begin{equation}\label{eq:probability_flow_ode}
+\boxed{\;
+\frac{\mathrm{d}x}{\mathrm{d}t} = f(x,t) - \tfrac12\,g(t)^2\,\nabla_x\log p_t(x)
+\;}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+一个随机过程的密度演化由其 SDE 决定。前向 SDE \cref{eq:forward_sde} 对应的边缘密度 $p_t(x)$ 满足 \textbf{Fokker–Planck（FP）方程}：
+\begin{equation}\label{eq:fokker_planck}
+\frac{\partial p_t(x)}{\partial t}
+= -\nabla_x\cdot\big[\,f(x,t)\,p_t(x)\,\big]
++ \tfrac12\,g(t)^2\,\nabla_x^2\, p_t(x),
+\tag{3.4}
+\end{equation}
+其中 $\nabla_x\cdot$ 是散度，$\nabla_x^2 = \nabla_x\cdot\nabla_x$ 是 Laplace 算子。
+
+另一方面，一个确定性ODE $\frac{\mathrm{d}x}{\mathrm{d}t}=v(x,t)$（$v$ 称速度场）所驱动的密度演化，满足连续性方程：
+\begin{equation}\label{eq:continuity_equation}
+\frac{\partial p_t(x)}{\partial t} = -\nabla_x\cdot\big[\,v(x,t)\,p_t(x)\,\big].
+\tag{3.5}
+\end{equation}
+连续性方程是“概率质量守恒”的数学表达：密度在某点的变化率，等于流入该点的概率流 $p_t v$ 的负散度。
+
+
+我们的目标是把式 \cref{eq:fokker_planck} 右端写成式 \cref{eq:continuity_equation} 那种“单个散度”的形式。
+
+对扩散项用恒等式 $\nabla_x^2 p_t = \nabla_x\cdot(\nabla_x p_t)$ 与 $\nabla_x p_t = p_t\,\nabla_x\log p_t$：
+\begin{align}
+\tfrac12 g^2\,\nabla_x^2 p_t
+= \tfrac12 g^2\,\nabla_x\cdot(\nabla_x p_t)
+= \nabla_x\cdot\Big[\tfrac12 g^2\, p_t\,\nabla_x\log p_t\Big].
+\end{align}
+代回式 \cref{eq:fokker_planck}：
+\begin{align}
+\frac{\partial p_t}{\partial t}
+&= -\nabla_x\cdot(f\,p_t) + \nabla_x\cdot\Big[\tfrac12 g^2 p_t\,\nabla_x\log p_t\Big] \nonumber\\
+&= -\nabla_x\cdot\Big[\underbrace{\big(f - \tfrac12 g^2\nabla_x\log p_t\big)}_{=:\,v(x,t)}\,p_t\Big].
+\end{align}
+这正是连续性方程 \cref{eq:continuity_equation}，对应的速度场就是
+\begin{equation}
+v(x,t) = f(x,t) - \tfrac12 g(t)^2\,\nabla_x\log p_t(x).
+\end{equation}
+于是确定性 ODE $\frac{\mathrm{d}x}{\mathrm{d}t}=v(x,t)$ 与原 SDE 共享同一组边缘密度 $\{p_t\}$——这就证明了\cref{eq:probability_flow_ode}。
+\end{proof}
+
+定理\cref{thm:probability_flow_ode}表明，确定性 ODE，与前向 SDE\cref{eq:forward_sde}、逆向 SDE\cref{eq:reverse_sde} 共享同一条边缘分布轨迹 $\{p_t\}$，拥有完全相同的边缘分布 $\{p_t\}_{t\in[0,T]}$。
+
+这意味着同一条“分布轨迹”$\{p_t\}$，可以由两种动力学实现：
+\begin{itemize}
+\item 一个\textbf{随机}的 SDE；
+\item 一个\textbf{确定性}的 ODE。
+\end{itemize}
+
+ODE 形式带来许多实际好处：可用高阶 ODE 数值解法（如 Runge–Kutta、DPM-Solver），用很少的步数采样；它定义了一个\textbf{可逆}的、数据点与噪声点之间的一一对应（确定性映射），可用于精确似然计算与图像编辑。
+
+\section{Flow Matching}
+
+\begin{quote}
+\textbf{本章时间约定（重要，与第 3 章相反）}：采用 Flow Matching 文献的标准约定。$t\in[0,1]$，\textbf{$t=0$ 是噪声 / 参考分布，$t=1$ 是数据分布}。即 $p_0 = p_{\text{ref}} = \mathcal N(0,I)$，$p_1 = p_{\text{data}}$。
+
+\textbf{务必注意记号 $x_0$ 的含义在此反转}：第 1–3 章里 $x_0$ 指\textbf{干净数据}，而从本章起 $x_0$ 指\textbf{噪声样本}、$x_1$ 才是数据样本。这是 DDPM 文献与 Flow Matching 文献各自的习惯，本讲义为对齐两边文献而保留二者；读到含 $x_0$、$x_1$ 的式子时，请先确认当前章节属于哪一边，再判断哪个是数据、哪个是噪声。
+\end{quote}
+
+对于扩散模型，它是先有的SDE，之后再有的速度场；而 Flow Matching 是\textbf{先有一条概率路径 $\{p_t\}$，再学一条速度场 $v_t$}。
+
+\subsection{连续流与连续性方程}
+
+\begin{definition}[流]
+    给定一个含时速度场（向量场）$v_t(x): \mathbb{R}^d\times[0,1]\to\mathbb{R}^d$，它通过 ODE 定义一族映射 $\phi_t:\mathbb{R}^d\to\mathbb{R}^d$：
+\begin{equation}\label{eq:flow_ode}
+\frac{\mathrm{d}}{\mathrm{d}t}\phi_t(x) = v_t\big(\phi_t(x)\big), \qquad \phi_0(x) = x.
+\tag{4.1}
+\end{equation}
+$\phi_t$ 称为该速度场生成的\textbf{流}。它把 $t=0$ 时位于 $x$ 的点，沿速度场搬运到 $t$ 时刻的位置。
+\end{definition}
+
+\begin{definition}[概率路径]
+    一条\textbf{概率路径}是一个随时间演化的分布序列 $\{p_t\}_{t\in[0,1]}$，满足两端边界条件：
+\begin{equation}\label{eq:probability_path_boundary}
+p_0 = p_{\text{ref}},\qquad p_1 = p_{\text{data}}.
+\end{equation}
+\end{definition}
+
+根据\cref{eq:flow_ode}，速度场 $v_t$ 生成的流 $\phi_t$ 把初始分布 $p_0$ 搬运到 $p_t$：
+\begin{equation}
+p_t = \phi_t\sharp p_0,
+\end{equation}
+其中 $\sharp$ 表示分布的推前（pushforward）。这等价于 $\{p_t, v_t\}$ 满足\textbf{连续性方程}：
+\begin{equation}\label{eq:continuity_equation_flow_matching}
+\frac{\partial p_t(x)}{\partial t} + \nabla_x\cdot\big[\,p_t(x)\,v_t(x)\,\big] = 0.
+\end{equation}
+
+如果我们有一个速度场，它生成的概率路径满足 $p_0=p_{\text{ref}}=\mathcal N(0,I)$ 且 $p_1=p_{\text{data}}$，那么采样就是：取 $x_0\sim\mathcal N(0,I)$，对 ODE (4.1) 从 $t=0$ 积分到 $t=1$，得到的 $x_1=\phi_1(x_0)$ 就服从 $p_{\text{data}}$。
+
+这套“用神经网络参数化速度场、用 ODE 采样”的模型，历史上叫连续正规化流。它早于扩散模型出现，但一直难训练：旧方法要在训练时反复数值求解 ODE、并用伴随法回传梯度，成本高、不稳定。Flow Matching 的贡献就是给出一个无需在训练时模拟 ODE的训练目标。
+
+\subsection{Flow Matching 的理想目标及其困难}
+
+假设我们\textbf{已经选定}了一条目标概率路径 $\{p_t\}$（满足两端边界条件），并且知道生成它的目标速度场 $u_t(x)$。那么训练神经网络速度场 $v_\theta(x,t)$ 最直接的目标是\textbf{回归这个速度场}：
+\begin{equation}\label{eq:flow_matching_loss}
+\mathcal L_{\text{FM}}(\theta) = \mathbb{E}_{t\sim\mathcal U[0,1]}\;\mathbb{E}_{x\sim p_t(x)}
+\Big[\,\big\| v_\theta(x,t) - u_t(x) \big\|^2\,\Big].
+\end{equation}
+这就是Flow Matching 损失。它的形式极其简单——就是一个对速度场的最小二乘回归，没有 ELBO、没有对抗、没有 KL。
+
+但是，这东西没法直接用。一方面我们不知道目标速度场 $u_t(x)$ 的解析式；另一方面我们也无法从边缘分布 $p_t(x)$ 直接采样。这与第 2.1 节显式得分匹配遇到的困难是同一类。
+
+如果我们不直接指定边缘路径 $p_t$，而是对每个数据点 $x_1$ 单独指定一条“条件概率路径” $p_t(x\mid x_1)$，要求：
+\begin{itemize}
+\item $t=1$ 时坍缩到该数据点：$p_1(x\mid x_1) = \delta(x-x_1)$（实践中用一个极窄的高斯近似）；
+\item $t=0$ 时为参考分布：$p_0(x\mid x_1) = \mathcal N(0, I)$（与 $x_1$ 无关）。
+\end{itemize}
+并为每条条件路径指定一个\textbf{条件速度场} $u_t(x\mid x_1)$，使 $\{p_t(\cdot\mid x_1), u_t(\cdot\mid x_1)\}$ 满足连续性方程 (4.2)。
+
+由这些条件路径，定义\textbf{边缘概率路径}：
+\begin{equation}\label{eq:marginal_probability_path}
+p_t(x) = \int p_t(x\mid x_1)\, q(x_1)\, \mathrm{d}x_1,
+\end{equation}
+其中 $q = p_{\text{data}}$。容易验证它满足两端边界：$t=0$ 时 $p_0(x)=\int\mathcal N(0,I)\,q(x_1)dx_1=\mathcal N(0,I)$；$t=1$ 时 $p_1(x)=\int\delta(x-x_1)q(x_1)dx_1=q(x)=p_{\text{data}}$。正合要求。
+
+所以可以得到条件Flow Matching 损失：
+\begin{equation}\label{eq:conditional_flow_matching_loss}
+\boxed{\;
+\mathcal L_{\text{CFM}}(\theta)
+= \mathbb{E}_{t\sim\mathcal U[0,1]}\;\mathbb{E}_{x_1\sim q(x_1)}\;\mathbb{E}_{x\sim p_t(x\mid x_1)}
+\Big[\,\big\| v_\theta(x,t) - u_t(x\mid x_1)\big\|^2\,\Big]
+\;}
+\end{equation}
+这个是完全可计算的：采一个数据点 $x_1$、采一个时间 $t$、从已知的条件路径 $p_t(\cdot\mid x_1)$ 采一个 $x$、用已知的条件速度场 $u_t(x\mid x_1)$ 当回归目标。没有任何未知量。
+
+
+这里也有一个定理，类比去噪得分匹配损失与显式得分匹配损失的等价性citeauthor
+\cref{thm:denoising_score_matching}\cite{lipman2023flowmatchinggenerativemodeling}：
+\begin{theorem}[等价定理]
+    对任意条件路径 $\{p_t(\cdot\mid x_1)\}$，其边缘概率路径 $\{p_t\}$ 与条件速度场 $\{u_t(\cdot\mid x_1)\}$ 定义的边缘速度场 $\{u_t\}$，Flow Matching 损失\cref{eq:flow_matching_loss}与条件 Flow Matching 损失\cref{eq:conditional_flow_matching_loss}只差一个与 $\theta$ 无关的常数：
+\begin{equation}\label{eq:flow_matching_equivalence}
+\boxed{\;\nabla_\theta \mathcal L_{\text{FM}}(\theta) = \nabla_\theta \mathcal L_{\text{CFM}}(\theta)\;}
+\end{equation}
+\end{theorem}
+
+证明的结构与去噪得分匹配的证明几乎逐行对应：
+\begin{proof}
+先确定式\cref{eq:flow_matching_equivalence}里的目标速度场 $u_t(x)$ 与条件速度场 $u_t(x\mid x_1)$ 的关系。每条条件路径满足连续性方程：
+\begin{equation}
+\partial_t\, p_t(x\mid x_1) = -\nabla_x\cdot\big[p_t(x\mid x_1)\,u_t(x\mid x_1)\big].
+\end{equation}
+两边乘 $q(x_1)$ 并对 $x_1$ 积分，左边用式\cref{eq:marginal_probability_path}，右边交换积分与散度：
+\begin{equation}
+\partial_t\, p_t(x)
+= -\nabla_x\cdot\!\int p_t(x\mid x_1)\,u_t(x\mid x_1)\,q(x_1)\,\mathrm{d}x_1.
+\end{equation}
+我们希望边缘也满足连续性方程 $\partial_t p_t = -\nabla_x\cdot[p_t(x)\,u_t(x)]$，对比可知必须定义边缘速度场为
+\begin{equation}\label{eq:marginal_velocity_field}
+\boxed{\;
+u_t(x) = \frac{1}{p_t(x)}\int u_t(x\mid x_1)\, p_t(x\mid x_1)\, q(x_1)\,\mathrm{d}x_1
+= \mathbb{E}_{x_1\sim p_t(x_1\mid x)}\big[\,u_t(x\mid x_1)\,\big]
+\;}
+\end{equation}
+最后一步用了 Bayes：$p_t(x\mid x_1)q(x_1)/p_t(x) = p_t(x_1\mid x)$。
+
+
+把式\cref{eq:flow_matching_loss}、\cref{eq:conditional_flow_matching_loss} 的平方都展开。$\|v_\theta\|^2$ 项：在 FM 中是 $\mathbb{E}_{p_t(x)}\|v_\theta\|^2$，在 CFM 中是 $\mathbb{E}_{q(x_1)p_t(x\mid x_1)}\|v_\theta\|^2$；由式\cref{eq:marginal_velocity_field}，对 $x_1$ 积分后两者相等。与 $\theta$ 无关的 $\|u_t\|^2$ 项不影响梯度，丢掉。
+
+只剩交叉项需要比较。
+
+FM 的交叉项：
+\begin{align}
+\mathbb{E}_{p_t(x)}\big[v_\theta(x,t)^\top u_t(x)\big]
+&= \int p_t(x)\, v_\theta(x,t)^\top u_t(x)\,\mathrm{d}x.
+\end{align}
+代入式\cref{eq:marginal_velocity_field} 的 $p_t(x)\,u_t(x) = \int u_t(x\mid x_1)p_t(x\mid x_1)q(x_1)\mathrm{d}x_1$：
+\begin{align}
+&= \int\!\!\int v_\theta(x,t)^\top u_t(x\mid x_1)\, p_t(x\mid x_1)\, q(x_1)\,\mathrm{d}x_1\,\mathrm{d}x \nonumber\\
+&= \mathbb{E}_{q(x_1)p_t(x\mid x_1)}\big[v_\theta(x,t)^\top u_t(x\mid x_1)\big].
+\end{align}
+最右端正是 CFM 的交叉项。两个损失逐项对应（含 $\theta$ 的部分完全相等），故 $\mathcal L_{\text{FM}} = \mathcal L_{\text{CFM}} + \text{const}$，梯度相等。
+\end{proof}
+
+\subsection{高斯条件路径}
+
+剩下的自由度就是“怎么选条件路径 $p_t(x\mid x_1)$”。最常用的是\textbf{高斯条件路径}：
+\begin{equation}\label{eq:gaussian_conditional_path}
+p_t(x\mid x_1) = \mathcal N\big(x;\; \mu_t(x_1),\; \sigma_t(x_1)^2 I\big)
+\end{equation}
+其中 $\mu_t(x_1)$、$\sigma_t(x_1)$ 是我们设计的、关于 $t$ 光滑的函数，需满足边界：$t=1$ 处 $\mu_1=x_1,\ \sigma_1\approx 0$；$t=0$ 处 $\mu_0=0,\ \sigma_0=1$（使 $p_0=\mathcal N(0,I)$）。
+
+对高斯条件路径，对应的条件速度场有\textbf{闭式解}。由式\cref{eq:gaussian_conditional_path}，从该路径采样可写成重参数化
+\begin{equation}
+x = \psi_t(x_0\mid x_1) := \mu_t(x_1) + \sigma_t(x_1)\,x_0, \qquad x_0\sim\mathcal N(0,I).
+\end{equation}
+这个 $\psi_t$ 本身就是一个（以 $x_1$ 为条件的）流，对它求时间导数即得条件速度场：沿轨迹 $\dot x = \dot\mu_t(x_1) + \dot\sigma_t(x_1)x_0$，再用 $x_0=(x-\mu_t)/\sigma_t$ 把 $x_0$ 消掉，得
+\begin{equation}\label{eq:conditional_velocity_field_gaussian}
+u_t(x\mid x_1) = \dot\mu_t(x_1) + \frac{\dot\sigma_t(x_1)}{\sigma_t(x_1)}\,\big(x - \mu_t(x_1)\big)
+\end{equation}
+点表示对 $t$ 求导。
+
+不同的 $(\mu_t,\sigma_t)$ 选择给出不同模型。
+
+\subsection{把路径取成直线}
+
+最简单、也是实践中最主流的选择：让条件路径就是噪声点 $x_0$ 与数据点 $x_1$ 之间的\textbf{直线插值}。设 $x_0\sim\mathcal N(0,I)$，$x_1\sim p_{\text{data}}$，定义
+\begin{equation}\label{eq:linear_interpolation_path}
+\boxed{\; x_t = (1-t)\,x_0 + t\,x_1, \qquad t\in[0,1]. \;}
+\end{equation}
+对应式\cref{eq:gaussian_conditional_path} 的 $\mu_t = t\,x_1$、$\sigma_t = 1-t$（此处条件同时给定 $x_0,x_1$，即条件路径退化为一条确定直线）。沿这条直线的速度是常向量：
+\begin{equation}\label{eq:linear_interpolation_velocity}
+\frac{\mathrm{d}x_t}{\mathrm{d}t} = x_1 - x_0
+\end{equation}
+于是条件速度场就是 $u_t(x_t\mid x_0,x_1) = x_1 - x_0$，与 $t$、与位置无关。代入 CFM 损失\cref{eq:conditional_flow_matching_loss}，得到 Rectified Flow / 直线 Flow Matching 的训练目标：
+\begin{equation}
+\boxed{\;
+\mathcal L(\theta) = \mathbb{E}_{t\sim\mathcal U[0,1]}\;\mathbb{E}_{x_0\sim\mathcal N(0,I)}\;\mathbb{E}_{x_1\sim p_{\text{data}}}
+\Big[\,\big\| v_\theta\big((1-t)x_0 + t\,x_1,\; t\big) - (x_1 - x_0)\big\|^2\,\Big]
+\;}
+\end{equation}
+
+这个目标极其简单，把它和 DDPM 的损失\cref{eq:ddpm_loss} 对比，发现两者都是“采一对噪声与数据、采一个时间、让网络回归某个目标”，只是 DDPM 的目标是噪声 $\varepsilon$，而 Flow Matching 的目标是常速度 $x_1-x_0$。两者的差别可见表\cref{tab:ddpm_vs_flow_matching}。
+
+\begin{table}
+\centering
+\begin{tabular}{c|c|c}
+\toprule
+ & 输入网络的样本 & 回归目标 \\
+\midrule
+DDPM（扩散时间 $t$） & $x_t=\sqrt{\bar\alpha_t}\,x_{\text{data}}+\sqrt{1-\bar\alpha_t}\,\varepsilon$ & 噪声 $\varepsilon$ \\
+\midrule
+Rectified Flow（流时间 $\tau$） & $x_\tau=(1-\tau)\,z+\tau\,x_{\text{data}}$ & 速度 $x_{\text{data}}-z$ \\
+\bottomrule
+\end{tabular}
+\caption{DDPM 与 Flow Matching 的训练目标对比}
+\label{tab:ddpm_vs_flow_matching}
+\end{table}
+
+现在的问题是如何采样。我们取 $x_0\sim\mathcal N(0,I)$，数值积分 ODE $\frac{\mathrm{d}x}{\mathrm{d}t}=v_\theta(x,t)$ 从 $t=0$ 到 $t=1$。最简单的是欧拉法，步长 $\Delta t$：
+\begin{equation}
+x_{t+\Delta t} = x_t + \Delta t\cdot v_\theta(x_t, t).
+\end{equation}
+
+需要注意的是，训练时每条“条件路径”是直线，但网络学到的\textbf{边缘速度场} $v_\theta$ 是所有这些直线速度的条件期望\cref{eq:marginal_velocity_field}，所以网络生成轨迹通常仍是弯的。人们进一步提出 \textbf{Reflow} 操作\cite{liu2022flowstraightfastlearning}：用训练好的模型生成一批配对 $(x_0, x_1=\phi_1(x_0))$，再用这些“模型自己配好对”的数据重新训练。由于现在 $x_0$ 与 $x_1$ 已沿模型轨迹耦合，新一轮的直线路径之间冲突更小，边缘轨迹被“拉直”。轨迹越直，ODE 数值积分所需步数越少。
+
+\section{生成模型的应用}
+
+生成模型的应用非常广泛。最常见的就是图像生成：无条件生成、文生图、图生图、视频生成等。也可以把生成对象换成音频、文本、分子结构，甚至是机器人动作序列。
+
+\subsection{图像生成}
+
+\paragraph{无条件生成}
+
+图像生成中，数据 $x_1$ 就是一张图像（像素张量，或经 VAE 编码后的隐空间张量，$d$ 为几千到几万维）。参考分布 $x_0\sim\mathcal N(0,I)$ 是同形状的高斯噪声张量。训练过程大致是：
+\begin{enumerate}
+\item 取一张训练图 $x_1$、一个噪声张量 $x_0$、一个时间 $t\sim\mathcal U[0,1]$；
+\item 线性插值 $x_t=(1-t)x_0+t\,x_1$；
+\item 网络 $v_\theta(x_t,t)$ 预测速度，回归目标 $x_1-x_0$。
+\end{enumerate}
+
+网络结构上，$v_\theta$ 用 U-Net 或 Diffusion Transformer（DiT），与扩散模型共用同一套骨干，只是把预测噪声 $\varepsilon$的输出头解释、训练成预测速度 $x_1-x_0$。
+
+这种情况下，图像的生成完全取决于模型，生成什么图是完全随机的。
+
+\paragraph{有条件生成}
+
+文生图需要文本条件，图生图需要图像条件。为此，将Flow Matching 加上条件 $c$，并把网络改成 $v_\theta(x_t,t,c)$，$c$ 为文本编码（如 T5 / CLIP 文本特征），通过交叉注意力注入。训练时按一定概率丢弃 $c$，采样时用
+\begin{equation}
+\tilde v_\theta(x_t,t,c) = v_\theta(x_t,t,\varnothing) + w\cdot\big[v_\theta(x_t,t,c) - v_\theta(x_t,t,\varnothing)\big],
+\end{equation}
+$w>1$ 为引导强度。剩下的，就和无条件生成完全一样。
+
+\subsection{机器人动作生成}
+
+之前我们只说了图像生成。如果说换一个生成对象，是否可行？答案是肯定的。Diffusion Policy\cite{chi2024diffusionpolicyvisuomotorpolicy}就是把 Flow Matching / 扩散模型的数学框架，应用到机器人控制上。
+
+模仿学习，也叫行为克隆，指的是：给定人类演示数据集，由若干轨迹组成，每条轨迹是一串“观测–动作”对；记观测为 $o$（如机器人相机图像 + 关节状态），动作为 $a$（如末端执行器的位移、夹爪开合），目标是学一个策略 $\pi(a\mid o)$，使机器人在新观测下产生合理动作。
+
+朴素的做法是把这个当成回归，训练 $a = \pi_\theta(o)$ 并用均方误差。这在动作分布是多模态的东西时会失败。多模态指：同一个观测 $o$ 下，存在多个都正确的动作。例如机器人面前有一个障碍物，从左绕、从右绕都对。演示数据里两种动作都出现。回归损失 $\|a-\pi_\theta(o)\|^2$ 的最优解是条件均值 $\mathbb{E}[a\mid o]$——“左”和“右”的平均，是“向前”，一个两种演示里都没有、且错误的动作。
+
+也就是说：模仿学习真正需要的是建模整个条件分布 $p(a\mid o)$，而不是它的均值。而“建模一个复杂条件分布并从中采样”正是生成模型的本职工作。这就是把扩散模型和 Flow Matching 引入机器人控制的动机——它与图像生成是同一个数学问题，只是把“图像”换成了“动作”。
+
+由于机器人的动作具有较高的连续性，这对实时性和连续性有较高的要求，所以不能仅对单步动作 $a$ 建模，而是应该对一段动作序列建模，一次性生成一小段未来动作，避免抖动。
+
+在时刻 $t$（这里 $t$ 是机器人控制的真实时间步，不是扩散时间），定义：
+\begin{itemize}
+\item \textbf{观测序列} $O_t = (o_{t-T_o+1}, \dots, o_t)$：最近 $T_o$ 步观测，作为条件；
+\item \textbf{动作序列} $A_t = (a_t, a_{t+1}, \dots, a_{t+T_p-1})$：未来 $T_p$ 步动作，作为要生成的对象。
+\end{itemize}
+把整个 $A_t$（一个维度为 $T_p\times\dim(a)$ 的张量）当作前几章里的“$x_1$”。Diffusion Policy 要建模的条件分布是
+\begin{equation}
+p(A_t \mid O_t).
+\end{equation}
+
+我们不仅可以使用扩散模型，也可以使用Flow Matching。这里使用后者，这是因为具身智能对生成模型有一个在图像生成里相对没那么突出的约束：\textbf{实时性}。机器人策略通常受\textbf{重规划频率}约束：每生成一段动作序列（action chunk）就执行其中一段、再用新观测重新规划，这个“重规划周期”必须在限定时间内完成，否则机器人会因为环境变化而做出错误动作。扩散模型需要数十步去噪，Flow Matching 只需几步甚至一步就能采样，显然更适合实时控制。
+
+把动作序列 $A$ 当作数据 $x_1$，记 $A^{(1)}$ 为干净动作序列、$A^{(0)}\sim\mathcal N(0,I)$ 为噪声（上标括号内是 Flow Matching 的连续时间 $\tau\in[0,1]$，与机器人控制时间 $t$ 区分）：
+\begin{enumerate}
+\item 取演示样本 $(O_t, A^{(1)})$，采噪声 $A^{(0)}\sim\mathcal N(0,I)$、流时间 $\tau\sim\mathcal U[0,1]$；
+\item 线性插值动作序列：$A^{(\tau)} = (1-\tau)\,A^{(0)} + \tau\,A^{(1)}$；
+\item 网络 $v_\theta(O_t,\, A^{(\tau)},\, \tau)$ 以观测为条件，回归常速度 $A^{(1)} - A^{(0)}$：
+\begin{equation}\label{eq:fm_policy_loss}
+\mathcal L(\theta) = \mathbb{E}_{O_t,\,A^{(1)},\,A^{(0)},\,\tau}
+\Big[\,\big\| v_\theta\big(O_t,\, A^{(\tau)},\, \tau\big) - \big(A^{(1)} - A^{(0)}\big)\big\|^2\,\Big].
+\end{equation}
+\end{enumerate}
+
+\textbf{采样}：拿到观测 $O_t$，取 $A^{(0)}\sim\mathcal N(0,I)$，欧拉法积分 ODE 从 $\tau=0$ 到 $\tau=1$：
+\begin{equation}
+A^{(\tau+\Delta\tau)} = A^{(\tau)} + \Delta\tau\cdot v_\theta\big(O_t,\, A^{(\tau)},\, \tau\big),
+\end{equation}
+得到动作序列 $A^{(1)}$。
+
+在实际工作中，模型一次预测 $T_p$ 步动作，但不会把这 $T_p$ 步全部执行完。Diffusion Policy 采用\textbf{滚动时域}：
+\begin{itemize}
+\item 预测时域 $T_p$（预测这么多步）；
+\item 执行时域 $T_a < T_p$（只执行前 $T_a$ 步）；
+\item 执行完 $T_a$ 步后，到达新时刻、拿到新观测，重新预测。
+\end{itemize}
+这样兼顾两点：预测长序列保证时间连贯性与多模态一致性；只执行其中一小段、频繁用新观测重规划，保证对环境变化的反应能力（闭环控制）。
+
+\textbf{$\pi0$}就是 Flow Matching 在具身智能落地的代表性 VLA 模型 \cite{black2026pi0visionlanguageactionflowmodel}，结构上分两部分：
+\begin{itemize}
+\item \textbf{视觉-语言骨干}：一个预训练的视觉语言模型（VLM），输入多路相机图像与自然语言指令，输出融合了感知与语义的特征。VLM 提供“这是什么场景、要做什么任务”的理解。
+\item \textbf{动作专家（action expert）}：一个用 Flow Matching 训练的速度场网络，以 VLM 特征与机器人本体状态为条件，生成动作序列。它就是 $v_\theta$，条件 $O_t$ 为VLM 特征 和 本体状态。
+\end{itemize}
+其工作流程大致是：输入相机图像、语言指令，VLM 将其编码为特征；随后，动作专家以此为条件，从高斯噪声出发跑 Flow Matching ODE，生成未来一段动作序列；最后滚动时域执行。其他同类工作（如以 Flow Matching 或扩散作为动作生成器的各类 VLA / 机器人策略）结构大同小异，不过核心都是这个。

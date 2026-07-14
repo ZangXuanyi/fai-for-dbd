@@ -1,7 +1,7 @@
 \chapter{卷积神经网络}
 
 上一节，我们研究了线性神经网络，能够完美的解决MNIST-10分类问题了。那么，我们来看一看更大型的问题。
-\begin{mdframed}[frametitle=例：ImageNet 10-分类问题]\itshape
+\begin{mdframed}[frametitle=例：ImageNet 10-分类问题]
 ImageNet\cite{2009ImageNet}是一个大型的图像数据库，包含了超过1400万张标注的图像，分为1000个类别。这些图像的大小是不固定的，但我们都将其处理成$224\times 224 \times 3$的大小，并仅取其中的十类图像，将这些图像合并成一个数据集，称为ImageNet-10。
 
 问：怎样解决这个分类问题？
@@ -112,8 +112,8 @@ w_3 & w_4
 当 $s=1$、$p=0$ 时，输出尺寸恰好为 $(H_{\text{in}}-k_h+1) \times (W_{\text{in}}-k_w+1)$；若希望输出尺寸与输入尺寸保持一致（这在许多现代网络架构中很常见），只需选择 $p = \lfloor k_h/2\rfloor$（假设核尺寸为奇数），同时保持 $s=1$。比如，一个 $3\times3$ 的卷积核配合 $p=1$ 即可得到同样高宽的输出特征图。
 
 \begin{mdframed}[frametitle=例子：单通道图像的卷积层前向传播]
-\itshape
-\hspace{2em}取一幅单通道 $5\times 5$ 的输入图像。使用一个 $3\times3$ 的卷积核 $\mathbf{W}$，偏置 $b=0$，步长 $s=2$，不填充（$p=0$）。则输出尺寸为
+
+取一幅单通道 $5\times 5$ 的输入图像。使用一个 $3\times3$ 的卷积核 $\mathbf{W}$，偏置 $b=0$，步长 $s=2$，不填充（$p=0$）。则输出尺寸为
 \[
 H_{\text{out}} = \left\lfloor\frac{5-3}{2}\right\rfloor + 1 = 2,\quad W_{\text{out}}=2.
 \]
@@ -181,8 +181,8 @@ H_{\text{out}} = \left\lfloor\frac{5-3}{2}\right\rfloor + 1 = 2,\quad W_{\text{o
 进一步可将指标平移，使其变成标准的互相关形式，但更自然的观点是：\textbf{输入梯度等于输出梯度与翻转后的核进行的数学卷积}。这正是为什么在教科书和早期代码中，人们常说“反向传播是卷积操作”——因为它确实严格对应于数学上的卷积（核被翻转）。而在现代框架统一使用互相关的语境下，只需记住：求输入梯度的操作，本质上是用核的\textbf{转置}（空间方向上下左右颠倒）与输出梯度做互相关，或者在补充零填充之后执行一个“全卷积”。
 
 \begin{mdframed}[frametitle=例子：单通道小图的卷积反向传播（不填充，步长1）]
-\itshape
-\hspace{2em}考虑输入为 $3\times3$ 的单通道图像：
+
+考虑输入为 $3\times3$ 的单通道图像：
 \[
 \mathbf{X} = \begin{bmatrix}
 x_{0,0} & x_{0,1} & x_{0,2} \\
@@ -436,8 +436,8 @@ class CNNWithPooling(nn.Module):
 当 $s>1$ 时，输出尺寸明显大于输入尺寸，这正是我们需要的上采样效果。
 
 \begin{mdframed}[frametitle=例子：最简单的转置卷积]
-\itshape
-\hspace{2em}输入为 $2\times2$ 的单通道矩阵
+
+输入为 $2\times2$ 的单通道矩阵
 \[
 \mathbf{X} = \begin{bmatrix}
 a & b \\

@@ -1,1 +1,229 @@
 \chapter{强化学习}
+
+先前的章节，我们已经讲过了FNN、RNN、Transformer、生成模型等深度学习模型，这些模型有一个共同点：需要大量的数据。但是在实际的情况中，数据本身可能是最珍贵的资源：例如我们希望从头训练一个能够游玩某种游戏的模型，但是我们没有大量的游戏数据可以用来训练模型。
+
+把这个问题换个角度来看。我们没有数据，但我们有\textbf{可以根据决策产出反馈的环境}。这时候，我们如果把这个反馈抽象成“奖励函数”，那么我们是否可以训练一个神经网络，来使奖励函数最大化（或使“惩罚函数”最小化）呢？这就是强化学习的核心问题。
+
+\section{强化学习的基本概念}
+
+\subsection{马尔可夫决策过程}
+
+强化学习本质上是一个序贯决策问题：智能体（agent）在一个环境中，通过不断采取动作（action）来影响环境状态（state），并从环境中获得奖励（reward）信号。智能体的目标不是最大化每一小步的即时奖励，而是最大化长期累积奖励。
+
+这个系统可以形式化为马尔可夫决策过程（Markov Decision Process, MDP）。一个有限 MDP 由一个五元组 $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$ 描述：
+\begin{itemize}
+\item $\mathcal{S}$ 是状态集合（可以是有限的，也可以是连续的）。
+\item $\mathcal{A}$ 是动作集合。
+\item $P(s' \mid s, a)$ 是状态转移概率：在状态 $s$ 执行动作 $a$ 后，下一个状态为 $s'$ 的概率。
+\item $R(s, a)$ 是奖励函数：在状态 $s$ 执行动作 $a$ 后获得的即时奖励（也可以是 $R(s, a, s')$ 的形式，这里为简化采用前者）。
+\item $\gamma \in [0,1]$ 是折扣因子，用于平衡即时奖励和未来奖励的重要性。
+\end{itemize}
+
+\begin{mdframed}[frametitle=例：简单的网格世界]
+    考虑一个 $4\times4$ 的网格，智能体可以执行“上、下、左、右”四个动作。智能体从起点出发，目标是在最少的步数内到达终点并获得 $+1$ 的奖励。每走一步获得 $0$ 奖励（或微小负奖励以鼓励最短路径）。如果碰到墙壁，智能体停留在原地。此时：
+    \begin{itemize}
+    \item 状态：网格中的每一个格子坐标 $(i,j)$，共16个状态。
+    \item 动作：$\{\text{up}, \text{down}, \text{left}, \text{right}\}$。
+    \item 状态转移：确定性，例如在 $(0,0)$ 执行 up，下一状态仍为 $(0,0)$（撞墙）。
+    \item 奖励：在终点执行任意动作获得 $+1$，其他位置为 $0$。
+    \end{itemize}
+    这个简单模型完美契合 MDP 的定义。智能体需要学会一条从起点到终点的策略。
+\end{mdframed}
+
+\subsection{策略、回报与值函数}
+
+智能体的行为由\textbf{策略}（policy）$\pi$ 决定。策略是从状态到动作概率分布的映射：
+\begin{equation}
+\pi(a \mid s) = \Pr(A_t = a \mid S_t = s).
+\end{equation}
+如果策略是确定性的，我们通常写作 $a = \mu(s)$。
+
+从时刻 $t$ 开始，智能体按照策略 $\pi$ 行动，获得的折扣回报（return）定义为：
+\begin{equation}\label{eq:return}
+G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \cdots = \sum_{k=0}^{\infty} \gamma^k R_{t+k+1}.
+\end{equation}
+折扣因子 $\gamma$ 的引入至关重要：当 $\gamma<1$，无限序列的和是有限的，同时给予近期奖励更高权重。对于有限时域的任务（如终局游戏），可取 $\gamma=1$。
+
+我们通过值函数来评价状态（或状态-动作对）的好坏。\textbf{状态值函数} $V^\pi(s)$ 表示从状态 $s$ 出发，始终遵循策略 $\pi$ 的期望回报：
+\begin{equation}\label{eq:v}
+V^\pi(s) = \mathbb{E}_{\pi}\left[ G_t \mid S_t = s \right].
+\end{equation}
+\textbf{动作值函数} $Q^\pi(s,a)$ 则表示在状态 $s$ 采取动作 $a$ 后，继续遵从策略 $\pi$ 的期望回报：
+\begin{equation}\label{eq:q}
+Q^\pi(s,a) = \mathbb{E}_{\pi}\left[ G_t \mid S_t = s, A_t = a \right].
+\end{equation}
+
+这两个值函数满足著名的\textbf{Bellman 方程}，它揭示了当前状态的值与下一时刻值之间的递归关系：
+\begin{align}
+V^\pi(s) &= \sum_{a \in \mathcal{A}} \pi(a \mid s) \sum_{s' \in \mathcal{S}} P(s' \mid s, a) \left[ R(s,a) + \gamma V^\pi(s') \right], \label{eq:bellman_v} \\
+Q^\pi(s,a) &= \sum_{s' \in \mathcal{S}} P(s' \mid s, a) \left[ R(s,a) + \gamma \sum_{a' \in \mathcal{A}} \pi(a' \mid s') Q^\pi(s',a') \right]. \label{eq:bellman_q}
+\end{align}
+
+Bellman 方程是几乎所有强化学习算法的基础：它把“从长序列中累加回报”的计算，转化为“当前奖励 + 下一步期望值”的一步自举（bootstrapping）。
+
+\subsection{最优策略与最优值函数}
+
+强化学习的终极目标是找到\textbf{最优策略} $\pi^*$，使得对于任意状态 $s$，$V^{\pi^*}(s) \ge V^\pi(s)$ 对所有 $\pi$ 成立。可以证明，对于任何 MDP，至少存在一个确定性最优策略。最优策略对应的值函数称为\textbf{最优值函数}：
+\begin{align}
+V^*(s) &= \max_\pi V^\pi(s), \label{eq:v_star} \\
+Q^*(s,a) &= \max_\pi Q^\pi(s,a). \label{eq:q_star}
+\end{align}
+
+最优值函数满足\textbf{Bellman 最优方程}：
+\begin{align}
+V^*(s) &= \max_{a \in \mathcal{A}} \sum_{s' \in \mathcal{S}} P(s' \mid s, a) \left[ R(s,a) + \gamma V^*(s') \right], \label{eq:bellman_opt_v} \\
+Q^*(s,a) &= \sum_{s' \in \mathcal{S}} P(s' \mid s, a) \left[ R(s,a) + \gamma \max_{a' \in \mathcal{A}} Q^*(s',a') \right]. \label{eq:bellman_opt_q}
+\end{align}
+一旦得到最优动作值函数 $Q^*(s,a)$，最优策略可以贪心地选择：$\pi^*(s) = \arg\max_a Q^*(s,a)$。
+
+\begin{mdframed}[frametitle=例：网格世界中的最优策略与值函数]
+    回到前面的 $4\times4$ 网格，终点设为 $(3,3)$，奖励在终点处为 $+1$，其余 $0$。取 $\gamma=1$（任务总有终点）。经过计算（通过动态规划或值迭代），终点周围的状态值最大，向外递减。例如 $(3,2)$ 的 $V^*$ 为 $1$，因为从 $(3,2)$ 向右移动即达到终点；$(2,2)$ 的 $V^*$ 可能为 $0.8$，依此类推。最优策略就是从任一格子出发，沿着值增长最快的方向行走。Bellman 最优方程完美刻画了这种递归关系。
+\end{mdframed}
+
+\section{基于值函数的强化学习}
+
+如果 MDP 的模型（$P$ 和 $R$）完全已知，且状态空间不大，那么我们可以通过\textbf{动态规划}（如策略迭代、值迭代）精确求解最优值函数。但在实际场景中，模型往往是未知的，且状态和动作空间可能极大。此时，智能体必须从与环境的交互（采样）中学习。
+
+\subsection{Q-Learning}
+
+Q-Learning 是一种无模型的时序差分（Temporal Difference, TD）学习算法\cite{watkins1992qlearning}\cite{sutton2018reinforcement}。它直接利用采样的经验数据 $(s_t, a_t, r_{t+1}, s_{t+1})$ 来迭代更新动作值函数 $Q(s,a)$，更新规则为：
+\begin{equation}\label{eq:q_learning}
+Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[ r_{t+1} + \gamma \max_{a'} Q(s_{t+1}, a') - Q(s_t, a_t) \right],
+\end{equation}
+其中 $\alpha \in (0,1]$ 是学习率。方括号内的项称为 TD 误差，它衡量了当前估计与从下一状态“自举”得到的目标值之间的差异。
+
+Q-Learning 有两个关键特性：
+\begin{enumerate}
+\item \textbf{离策略}（off-policy）：更新所用的动作为 $\max_{a'} Q(s_{t+1}, a')$，与智能体实际执行的行动策略无关。这使得 Q-Learning 可以学习最优策略，即使执行时使用的是探索策略（如 $\epsilon$-贪心）。
+\item \textbf{收敛性}：在适当条件下（每个状态-动作对被无限次访问，学习率适当衰减），Q-Learning 会以概率 $1$ 收敛到最优 $Q^*$\cite{watkins1992qlearning}。
+\end{enumerate}
+
+\paragraph{表格型 Q-Learning 的局限}
+
+当状态和动作空间离散且较小时，可以用一个表格存储所有 $Q(s,a)$ 的值。但对于图像输入（像素为状态）或连续状态，表格无法处理，必须引入函数逼近。
+
+\subsection{深度 Q 网络（DQN）}
+
+用深度神经网络来参数化动作值函数 $Q(s,a; \theta)$，将 Q-Learning 与深度学习结合，就得到了深度 Q 网络\cite{mnih2013playing}\cite{mnih2015humanlevel}。DQN 在 Atari 2600 游戏上取得了跨时代的成功，直接从原始像素学习策略并达到人类甚至超人类的水平。
+
+DQN 引入两项关键技术创新来稳定训练：
+
+\paragraph{经验回放} 智能体将每次交互产生的经验 $(s_t, a_t, r_{t+1}, s_{t+1})$ 存入一个回放记忆单元（replay buffer）。训练时，从该记忆池中随机抽取小批量样本进行网络更新。这打破了样本之间的时序相关性，使得训练更接近监督学习中的独立同分布假设，并允许每个经验样本被多次使用，大幅提高了数据效率。
+
+\paragraph{目标网络} 使用两个结构相同但参数更新的步调不同的网络：
+\begin{itemize}
+\item \textbf{在线网络} $Q(s,a; \theta)$：持续更新，用于选择动作。
+\item \textbf{目标网络} $Q(s,a; \theta^-)$：每隔一定步数将在线网络的参数复制过来，用于计算目标值。
+\end{itemize}
+DQN 的损失函数（标量时序差分误差的最小二乘）为：
+\begin{equation}\label{eq:dqn_loss}
+\mathcal{L}_{\text{DQN}}(\theta) = \mathbb{E}_{(s,a,r,s') \sim \mathcal{D}} \left[ \left( r + \gamma \max_{a'} Q(s', a'; \theta^-) - Q(s, a; \theta) \right)^2 \right],
+\end{equation}
+其中 $\mathcal{D}$ 是经验回放池。TD 目标 $r + \gamma \max_{a'} Q(s', a'; \theta^-)$ 在被更新的一小段时间内保持相对固定，有效抑制了训练的不稳定性与发散。DQN 奠定了深度强化学习的工程基础，经验回放和目标网络这两大技巧至今仍在各类算法中广泛使用。
+
+\begin{mdframed}[frametitle=例子：DQN 在 Atari 游戏中的表现]
+    Mnih 等人\cite{mnih2015humanlevel} 使用同一套 DQN 架构和超参数在 49 款 Atari 游戏中从原始 $210\times160$ 像素输入直接学习。网络将最近 4 帧画面作为输入，通过卷积层提取特征，再经过全连接层输出每个动作的 $Q$ 值。在 29 款游戏中，DQN 的得分达到了专业人类测试者的水平。尤其像“Breakout”（打砖块）这类需要提前规划击球角度的游戏，DQN 在数小时训练后发现了人类玩家的常用技巧：从侧面打通一条隧道让球飞到砖块后方反复弹击，充分体现了深度值与强化学习组合的强大推理能力。
+\end{mdframed}
+
+\subsection{DQN 的改进：Double DQN 与 Dueling DQN}
+
+标准的 DQN 存在\textbf{高估偏差}（overestimation bias）：每次用 $\max_{a'} Q(s',a'; \theta^-)$ 选择最大值时，由于估计误差，所选动作的值往往偏高，导致 $Q$ 值系统性高估。Van Hasselt 等人提出的 Double DQN\cite{vanhasselt2016deepreinforcementlearningdouble} 将动作选择和动作评估解耦：使用在线网络选择下一行动作 $a^* = \arg\max_{a'} Q(s',a'; \theta)$，再用目标网络评估其值 $Q(s', a^*; \theta^-)$，从而显著减轻高估。
+
+Wang 等人提出的 Dueling DQN\cite{wang2016duelingnetworkarchitecturesdeep} 将网络输出拆分为两部分：状态值 $V(s)$ 和动作优势 $A(s,a)$，最终 $Q(s,a) = V(s) + A(s,a) - \frac{1}{|\mathcal{A}|}\sum_{a'} A(s,a')$。这种分解使得网络在不需要精确每个动作差异的情况下也能学到对状态值的良好估计，尤其适合动作选择对当前状态影响微小的场景。
+
+\section{基于策略的强化学习}
+
+值函数方法（如 DQN）最终通过贪心策略选择动作，但在动作空间连续或随机策略天然更优的情况下，这类方法面临局限。例如，在机器人控制中，动作可能是关节力矩的连续向量；在扑克等博弈中，随机策略（以一定概率选择不同动作）对于不可被对手预测至关重要。因此，直接对策略进行参数化学习成为另一条重要路线。
+
+\subsection{策略梯度与 REINFORCE}
+
+将策略参数化为 $\pi_\theta(a \mid s)$（或确定性策略 $\mu_\theta(s)$）。目标函数是“期望回报”，即策略在该参数下的表现：
+\begin{equation}\label{eq:policy_objective}
+J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta}\left[ \sum_{t=0}^{T} \gamma^t R(s_t, a_t) \right],
+\end{equation}
+其中 $\tau = (s_0, a_0, s_1, a_1, \dots)$ 为一条轨迹。
+
+\textbf{策略梯度定理}\cite{sutton1999policy}\cite{williams1992simple} 给出了目标函数对参数 $\theta$ 的梯度：
+\begin{equation}\label{eq:policy_gradient}
+\nabla_\theta J(\theta) = \mathbb{E}_{\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a \mid s) \,\, Q^{\pi_\theta}(s, a) \right].
+\end{equation}
+这个公式的美妙之处在于：对轨迹分布的导数转化为了对策略本身的对数求导，完全不依赖环境动力学的知识。
+
+最简单的蒙特卡洛策略梯度算法——REINFORCE\cite{williams1992simple} ——使用采样的完整轨迹回报 $G_t$ 来替代真实的 $Q^{\pi_\theta}(s_t, a_t)$，参数更新为：
+\begin{equation}
+\theta \leftarrow \theta + \alpha \, \nabla_\theta \log \pi_\theta(a_t \mid s_t) \, G_t.
+\end{equation}
+直观上，若动作带来了高于平均的回报，则提高该动作的概率；反之降低。REINFORCE 虽无偏，但方差极大，需要大量样本才能收敛。
+
+\subsection{Actor-Critic 架构}
+
+为了降低方差，智能体同时学习一个\textbf{策略网络（演员，Actor）}和一个\textbf{值函数网络（评论家，Critic）}。Critic 估计 $Q^{\pi_\theta}(s,a)$ 或 $V^{\pi_\theta}(s)$，用来替代 REINFORCE 中的完整回报，从而在每一步更新中给出低方差的指导信号。
+
+标准的 Actor-Critic 更新使用\textbf{优势函数} $A(s,a) = Q(s,a) - V(s)$ 作为得分。相比于使用 $Q(s,a)$，减去基线 $V(s)$ 不引入偏差但能大幅降低方差。此时策略梯度为：
+\begin{equation}
+\nabla_\theta J(\theta) = \mathbb{E}_{\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a \mid s) \, A^{\pi_\theta}(s, a) \right].
+\end{equation}
+
+Critic 的更新通常采用 TD 误差对值函数 $V_\phi(s)$ 进行监督学习，例如最小化：
+\begin{equation}
+\mathcal{L}_{\text{critic}}(\phi) = \mathbb{E}_{(s, r, s') \sim \mathcal{D}} \left[ \left( r + \gamma V_\phi(s') - V_\phi(s) \right)^2 \right].
+\end{equation}
+
+这种演员-评论家结合的设计构成了现代主流深度强化学习算法的基石\cite{konda1999actorcritic}。
+
+\subsection{近端策略优化（PPO）}
+
+策略梯度算法对步长极为敏感：过大的步长可能导致策略突变、性能崩溃，过小的步长则使训练停滞。Schulman 等人提出的\textbf{近端策略优化（Proximal Policy Optimization, PPO）}\cite{schulman2017proximal} 以一种简洁而高效的方式解决了这一问题，成为目前工业界应用最广的深度 RL 算法之一。
+
+PPO 的核心思想是在更新策略时，约束新旧策略之间的差异不能过大。PPO 的截断目标函数（clip objective）定义为：
+\begin{equation}\label{eq:ppo_clip}
+\mathcal{L}^{\text{CLIP}}(\theta) = \mathbb{E}_t \left[ \min\left(
+r_t(\theta) \hat{A}_t, \;
+\operatorname{clip}\big(r_t(\theta), 1-\epsilon, 1+\epsilon\big) \hat{A}_t
+\right) \right],
+\end{equation}
+其中：
+\begin{itemize}
+\item $r_t(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}$ 是当前策略与旧策略在样本动作上的概率比；
+\item $\hat{A}_t$ 是优势函数的估计（常用广义优势估计 GAE）；
+\item $\epsilon$ 是超参数（通常取 $0.1 \sim 0.2$），控制截断范围。
+\end{itemize}
+
+\textbf{截断逻辑}：当 $\hat{A}_t > 0$（动作“好”），我们希望提高该动作的概率，但 $r_t(\theta)$ 不能太大，被截断在 $1+\epsilon$；当 $\hat{A}_t < 0$（动作“坏”），我们希望降低其概率，$r_t(\theta)$ 被截断在 $1-\epsilon$。截断操作通过取 min 保证目标函数是策略改进的保守下界：算法只会沿着提升性能的方向更新，但绝不会因过大的步长而迈入危险区域。
+
+PPO 在实践中比传统的信赖域策略优化（TRPO）\cite{schulman2015trustregion} 简单得多——无需二阶优化，仅用一阶梯度配合多轮随机梯度下降即可。因此，PPO 迅速成为首选的深度 RL 算法，从游戏 AI 到机器人操作，应用遍布。
+
+\section{深度强化学习的应用与挑战}
+
+\subsection{游戏：深度强化学习的试验田}
+
+游戏因其明确的奖励结构、快速仿真能力和无穷的数据供给，一直是深度 RL 的最重要试验场。
+
+\begin{itemize}
+\item \textbf{Atari 2600}：DQN 及其变体在近 50 款游戏中达到了人类专业水平，成为深度 RL 的经典基准\cite{mnih2015humanlevel}。
+\item \textbf{AlphaGo}：Silver 等人结合深度神经网络、蒙特卡罗树搜索和监督学习 + 强化学习，使 AlphaGo 在 2016 年击败围棋世界冠军李世石\cite{silver2016mastering}。其强化学习部分正是基于策略梯度和值函数的自我对弈。
+\item \textbf{AlphaStar}：DeepMind 使用多智能体强化学习训练 StarCraft II AI，在 2019 年达到宗师级水平\cite{vinyals2019grandmaster}。其架构结合了 Transformer、自回归策略和模仿学习，代表了深度 RL 在复杂部分可观测环境中的集大成。
+\item \textbf{OpenAI Five}：基于 PPO 的 Dota 2 智能体在 2019 年击败世界冠军队伍，再次证明了 PPO 在大规模分布式训练下的有效性\cite{berner2019dota2}。
+\end{itemize}
+
+\subsection{机器人控制}
+
+在机器人控制中，深度 RL 能够直接从图像或关节传感器输入中学习端到端的控制策略，而无需人工设计复杂的控制器。Levine 等人使用深度策略搜索实现了从原始图像到电机力矩的映射，让机器人学会抓取未知物体\cite{levine2018learning}。然而，现实世界的强化学习受限于样本效率低下和安全问题：机器人试错成本高，每一个失败动作都可能造成硬件损坏。因此，经常先在仿真器中训练，再迁移到现实（sim-to-real），并结合模型预测控制或模仿学习来弥合仿真与现实之间的鸿沟。
+
+\subsection{深度强化学习的主要挑战}
+
+尽管成果斐然，深度强化学习仍面临诸多棘手挑战：
+\begin{enumerate}
+\item \textbf{样本效率}：多数深度 RL 算法需要与环境交互数百万乃至数十亿步才能学到有效策略。对于物理系统，这样大的交互量通常不可接受。
+\item \textbf{稀疏奖励与探索}：当奖励信号极其稀疏时（例如在迷宫中只有到达终点才获得正奖励），随机探索几乎不可能找到成功轨迹。需要主动探索、好奇心驱动等机制\cite{pathak2017curiosity}。
+\item \textbf{泛化能力}：训练环境中表现优异的策略，面对微小的环境变化（如视觉背景替换）性能可能急剧下降。这促使研究者在多任务学习、域随机化和无监督表示学习上投入。
+\item \textbf{稳定性与可复现性}：深度 RL 的训练对随机种子、超参数和实现细节极其敏感。即使同一算法、同一环境，不同随机种子的训练结果也可能大相径庭\cite{henderson2018deep}。
+\end{enumerate}
+
+尽管存在上述挑战，强化学习提供了一种独特的框架，使得智能体可以在无显式监督的情况下通过试错自主学习。在第三章我们讨论的生成模型中，Flow Matching 和扩散模型已经为机器人策略提供了一种新颖的替代方案（如 Diffusion Policy），它们部分绕过了强化学习，但许多本质问题（探索、多步决策）仍然共享。最终，理解和掌握强化学习，就掌握了让机器在交互中自行进化的钥匙。
+
+\section{总结}
+
+本章从马尔可夫决策过程出发，建立了强化学习的形式化语言，并逐步覆盖了基于值函数的方法（Q-Learning、DQN）、基于策略的方法（REINFORCE、Actor-Critic）以及它们在现代最重要变体 PPO 中的融合。我们看到，通过对“奖励信号”的追逐，智能体能够在游戏、机器人等高度复杂的决策任务中涌现出近似最优的行为。
+
+如果说监督学习是在人类提供的答案中寻找规律，那么强化学习就是\textbf{让智能体在开放世界中自己寻找答案}。这条寻找之路布满荆棘——样本饥渴、探索困难、训练脆弱——但它通向的，却是真正自主智能的晨光。

@@ -1,6 +1,8 @@
 \documentclass[openany,heading,oneside]{ctexbook}
 \input{preamble}
 
+\includeonly{chapters/reinforcement}
+
 \begin{document}
 \maketitle
 
@@ -8,18 +10,18 @@
 
 \mainmatter
 
-\input{chapters/history}
-\input{chapters/math}
-\input{chapters/linear}
-\input{chapters/convolutional}
-\input{chapters/recursive}
-\input{chapters/transformer}
-\input{chapters/adversarial}
-\input{chapters/generative}
-\input{chapters/reinforcement}
-\input{chapters/others}
+\include{chapters/history}
+\include{chapters/math}
+\include{chapters/linear}
+\include{chapters/convolutional}
+\include{chapters/recursive}
+\include{chapters/transformer}
+\include{chapters/adversarial}
+\include{chapters/generative}
+\include{chapters/reinforcement}
+\include{chapters/others}
 
-\backmatter
+% \backmatter
 \printbibliography[title=参考文献]
 
 

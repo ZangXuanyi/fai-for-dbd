@@ -29,7 +29,7 @@
     \item $\lim_{x \to x_0} (f(x)/g(x)) = \lim_{x \to x_0} f(x) / \lim_{x \to x_0} g(x)$，前提是$\lim_{x \to x_0} g(x) \neq 0$。
 \end{itemize}
 
-\begin{mdframed}[frametitle=例：求极限]\itshape
+\begin{mdframed}[frametitle=例：求极限]
 求这两个极限：
 \[ \lim_{x\to 2}\frac{2x^3+3x-1}{x^3+3}, \quad \lim_{x\to +\infty}\frac{3x^2+2x-1}{x^2-2} \]
 
@@ -225,7 +225,7 @@ d F(x) = f(x) dx
 \end{equation}
 特别注意：这个公式不仅可以从左到右用（即“第一换元法”），也可以从右到左用（即“第二换元法”）。
 
-\begin{mdframed}[frametitle=例：不定积分的第一换元法]\itshape
+\begin{mdframed}[frametitle=例：不定积分的第一换元法]
 求积分：$\int \tan x dx$。
 
 我们知道$\tan x = \sin x / \cos x$，所以$\int \tan x dx = \int \sin x / \cos x dx$。令$u = \cos x$，则$du = -\sin x dx$，所以：
@@ -234,7 +234,7 @@ d F(x) = f(x) dx
 \end{equation}
 \end{mdframed}
 
-\begin{mdframed}[frametitle=例：不定积分的第二换元法]\itshape
+\begin{mdframed}[frametitle=例：不定积分的第二换元法]
 求积分：$\int \sqrt{a^2 - x^2} dx$，其中$a > 0$。
 
 不妨设$x = a \sin t$，则$dx = a \cos t dt$，所以：
@@ -258,7 +258,7 @@ d F(x) = f(x) dx
 \int u dv = uv - \int v du
 \end{equation}
 
-\begin{mdframed}[frametitle=例：不定积分的分部积分法]\itshape
+\begin{mdframed}[frametitle=例：不定积分的分部积分法]
 求不定积分$\int x^3 \ln x dx$。
 
 令$u = \ln x$，则$du = dx / x$；令$dv = x^3 dx$，则$v = x^4 / 4$。所以：
@@ -279,7 +279,7 @@ d F(x) = f(x) dx
 设函数$f(x)$在区间$[a, b]$上有定义，若函数间断点的测度为零（即函数间断点的个数有限，或者函数间断点的个数无限，但这些间断点的总长度为零），则函数$f(x)$在区间$[a, b]$上可积。
 \end{theorem}
 
-\begin{mdframed}[frametitle=例：定积分的计算（定义）]\itshape
+\begin{mdframed}[frametitle=例：定积分的计算（定义）]
 求定积分$\int_0^a \sqrt{a^2 - x^2} dx$。
 
 发现曲线$y = \sqrt{a^2 - x^2}$是半径为$a$的圆的上半部分，所以这个定积分的值就是半径为$a$的圆的面积的一半，即$\pi a^2 / 2$。
@@ -302,7 +302,7 @@ d F(x) = f(x) dx
 
 另外，由于定积分有上下限，所以有很多巧妙的方法计算。
 
-\begin{mdframed}[frametitle=例：定积分的计算（换元法）]\itshape
+\begin{mdframed}[frametitle=例：定积分的计算（换元法）]
 求定积分$I= \int_{0}^{\pi} \frac{x\sin x}{1 + \cos^2 x} dx$。
 
 由定积分的性质，我们将其拆成两段：
@@ -324,7 +324,7 @@ I= \pi \int_{0}^{\pi/2} \frac{\sin x dx}{1 + \cos^2 x} = -\pi \int_{1}^{0} \frac
 \end{equation}
 \end{mdframed}
 
-\begin{mdframed}[frametitle=例：定积分的计算（分部积分法）]\itshape
+\begin{mdframed}[frametitle=例：定积分的计算（分部积分法）]
 计算定积分$\int_0^1 x \ln(x+1) dx$。
 
 我们令$u = \ln(x+1)$，则$du = dx/(x+1)$；令$dv = x dx$，则$v = x^2/2$。所以：
@@ -371,7 +371,7 @@ I= \pi \int_{0}^{\pi/2} \frac{\sin x dx}{1 + \cos^2 x} = -\pi \int_{1}^{0} \frac
 \end{equation}
 对应的换元法和分部积分法也可以类似地使用。
 
-\begin{mdframed}[frametitle=例：第一类反常积分的计算（定义）]\itshape
+\begin{mdframed}[frametitle=例：第一类反常积分的计算（定义）]
 计算反常积分$\int_{-\infty}^{+\infty} dx/(x^2+1)$。
 
 由公式可得，
@@ -380,7 +380,7 @@ I= \pi \int_{0}^{\pi/2} \frac{\sin x dx}{1 + \cos^2 x} = -\pi \int_{1}^{0} \frac
 \end{equation}
 \end{mdframed}
 
-\begin{mdframed}[frametitle=例：第一类反常积分的计算（换元）]\itshape
+\begin{mdframed}[frametitle=例：第一类反常积分的计算（换元）]
 计算反常积分$\int_1^{+\infty} dx/x\sqrt{1+x^2}$。
 
 令$x = 1/t$，则$dx = -dt/t^2$，所以：
@@ -391,7 +391,7 @@ I= \pi \int_{0}^{\pi/2} \frac{\sin x dx}{1 + \cos^2 x} = -\pi \int_{1}^{0} \frac
 由这个实例可知，经过换元之后，有的反常积分可以化为定积分。
 \end{mdframed}
 
-\begin{mdframed}[frametitle=例：第一类反常积分的计算（分部积分）]\itshape
+\begin{mdframed}[frametitle=例：第一类反常积分的计算（分部积分）]
 计算反常积分$\int_1^{+\infty} \frac{\arctan x}{x^3} dx$。
 
 令$u = \arctan x$，则$du = dx/(1+x^2)$；令$dv = dx/x^3$，则$v = -1/(2x^2)$。所以：
@@ -724,7 +724,7 @@ a & b \\ c & d
 
 利用这些性质，通过矩阵的“行变换”我们可以把矩阵化成上三角形式，然后把主对角线元素相乘，就得到行列式。这让手算行列式容易很多。
 
-\begin{mdframed}[frametitle=例：计算行列式]\itshape
+\begin{mdframed}[frametitle=例：计算行列式]
 计算
 \[
 \begin{vmatrix}
@@ -841,7 +841,7 @@ AB = BA = I_n,
 
 得到特征值 \(\lambda\) 后，代入 \((A - \lambda I)\mathbf{v} = \mathbf{0}\)，解出的非零解向量就是对应的特征向量。
 
-\begin{mdframed}[frametitle=例：求特征值与特征向量] \itshape
+\begin{mdframed}[frametitle=例：求特征值与特征向量] 
 设 \(A = \begin{bmatrix} 4 & 1 \\ 2 & 3 \end{bmatrix}\)。求特征值：
 \[
 \det\begin{pmatrix} 4-\lambda & 1 \\ 2 & 3-\lambda \end{pmatrix} = (4-\lambda)(3-\lambda) - 2 = \lambda^2 - 7\lambda + 10 = 0,
@@ -934,7 +934,7 @@ SVD的计算过程非常复杂：
     \item 对于正奇异值 \(\sigma_i > 0\)，左奇异向量可由 \(\mathbf{u}_i = \frac{1}{\sigma_i} A \mathbf{v}_i\) 得到；若 \(m > r\)，还需找齐 \(U\) 剩下的零空间标准正交基。
 \end{enumerate}
 
-\begin{mdframed}[frametitle=例：奇异值分解]\itshape
+\begin{mdframed}[frametitle=例：奇异值分解]
 \(A = \begin{bmatrix} 1 & 1 \\ 0 & 1 \\ 0 & 0 \end{bmatrix}\)。先求 \(A^\top A = \begin{bmatrix} 1 & 1 \\ 1 & 2 \end{bmatrix}\)。其特征方程为 \((1-\lambda)(2-\lambda)-1 = \lambda^2 - 3\lambda + 1 = 0\)，特征值 \(\lambda_1 = \frac{3+\sqrt{5}}{2} \approx 2.618\)，\(\lambda_2 = \frac{3-\sqrt{5}}{2} \approx 0.382\)。奇异值 \(\sigma_1 = \sqrt{\lambda_1} \approx 1.618\)，\(\sigma_2 = \sqrt{\lambda_2} \approx 0.618\)。进而求出 \(V\) 的特征向量，再通过 \(A\mathbf{v}_i\) 得到 \(U\) 的前两列，最后一列补一个正交向量即可。
 \end{mdframed}
 
@@ -1090,7 +1090,7 @@ J_{\mathbf{f}} = \begin{pmatrix}
 \]
 更一般地，输入是 $k$ 阶张量，输出是 $l$ 阶张量，那么梯度将是一个 $k+l$ 阶张量。虽然这在数学上很“重”，但在编程中，自动求导框架已经为我们默默地管理好了这些高维数组。
 
-\begin{mdframed}[frametitle=例：矩阵函数的梯度]\itshape
+\begin{mdframed}[frametitle=例：矩阵函数的梯度]
 设 $\mathbf{x} \in \mathbb{R}^n$ 为输入向量，$W \in \mathbb{R}^{n \times m}$ 为权重矩阵，$\mathbf{b} \in \mathbb{R}^m$ 为偏置向量，定义
 \[
 \mathbf{f}(W) = W^\top \mathbf{x} + \mathbf{b} .
@@ -1149,7 +1149,7 @@ P(A \mid B) = \frac{P(B \mid A)P(A)}{P(B)} = \frac{P(B \mid A)P(A)}{P(B \mid A)P
 P(A_i \mid B) = \frac{P(B \mid A_i)P(A_i)}{\sum_j P(B \mid A_j)P(A_j)}, \quad \bigsqcup_i A_i = \Omega, \quad P(A_i) > 0.
 \end{equation}
 
-\begin{mdframed}[frametitle=例：贝叶斯定理的应用]\itshape
+\begin{mdframed}[frametitle=例：贝叶斯定理的应用]
     新冠疫情期间我们经历了多次核酸检测。假设某核酸检测的的敏感度（一个携带病毒的人，检测结果为阳性的概率）为0.95，特异度（一个不携带病毒的人，检测结果为阴性的概率）为0.98。假设在某个社区中，感染率（携带病毒的人的比例）为0.01。如果某个人的检测结果为阳性，他确实感染了病毒的概率是多少？对此人进行复检，第二次检测结果仍然为阳性，那么他确实感染了病毒的概率又是多少？
 
     设事件A为“某人感染了病毒”，事件B为“某人检测结果为阳性”，则我们要求的是$P(A \mid B)$。根据贝叶斯定理，带入数据计算可得：
@@ -1196,7 +1196,7 @@ P(A \mid B) = \frac{0.95 \times 0.01}{0.95 \times 0.01 + (1 - 0.98) \times (1 - 
     \item[贝叶斯估计] 结合先验概率和似然函数，使用贝叶斯定理计算后验概率，并选择使得后验概率最大的参数值作为估计值。也被称作“最大后验估计”，是贝叶斯学派中最常用的参数估计方法。
 \end{description}
 
-\begin{mdframed}[frametitle=练习：MLE与MAP估计]\itshape
+\begin{mdframed}[frametitle=练习：MLE与MAP估计]
     设某核酸检测的敏感度为0.95，特异性为1.00。假设在某个社区中，感染率为0.1。每一个人的检测结果都是独立的。某10人混管的检测结果为阳性，设该混管中感染者数量为$X$。
 
     计算：
@@ -1216,7 +1216,7 @@ P(A \mid B) = \frac{0.95 \times 0.01}{0.95 \times 0.01 + (1 - 0.98) \times (1 - 
     这说明MLE估计在某些情况下很不合理，因为它没有考虑先验知识，而MAP估计则能够结合先验知识，得到更合理的结果。但MAP估计的缺点在于它依赖于先验分布的选择，具有一定的主观性，可能产生偏差。
 \end{mdframed}
 
-\begin{mdframed}[frametitle=练习：连续情况下的MLE估计]\itshape
+\begin{mdframed}[frametitle=练习：连续情况下的MLE估计]
 设某连续随机变量$X$的概率密度函数为$f(x) = \frac{1}{\theta} e^{-x/\theta}$，其中$\theta > 0$是未知参数。
 
 \begin{enumerate}
