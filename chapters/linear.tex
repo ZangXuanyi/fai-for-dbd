@@ -172,6 +172,20 @@ f(\theta+\Delta \theta) - f(\theta) = \int_0^1 \frac{\partial g}{\partial t} dt
 
 \cref{thm:gd_convergence}这个定理证明完成之后，我们的问题就变成：损失函数到底是不是具有Lipschitz连续梯度的光滑函数？实际上，这个假设通常都是不成立的；但在实际情况中，能真正训练成功的模型，大多都能保证损失函数的梯度整体上是很稳定的。\cite{kexuefm-6992}
 
+有的读者可能会考虑为什么我们不在这里考虑“收敛到鞍点”的问题。实际上，若定义“严格鞍点性质”：
+\begin{definition}[严格鞍点性质]
+    若$f$是一个光滑函数，$\theta^*$是$f$的一个临界点（即$\nabla f(\theta^*) = 0$），且Hessian矩阵$\nabla^2 f(\theta^*)$有至少一个负特征值，则称$\theta^*$是$f$的一个严格鞍点。
+
+    如果一个函数的所有临界点（$\nabla f(\theta) = 0$）要么是局部最小值，要么是严格鞍点，则称$f$具有严格鞍点性质。机器学习中的损失函数大多具有该性质。
+\end{definition}
+则下列定理成立：
+\begin{theorem}[标准流形定理的推论]
+    从随机初始点出发，梯度下降几乎必然不会收敛到严格鞍点\cite{lee2016gradientdescentconvergesminimizers}。
+
+    换言之，那些会导致算法收敛到严格鞍点的初始点，其集合的Lebesgue测度为零\cite{panageas2016gradientdescentconvergesminimizers}。
+\end{theorem}
+所以我们大概率是不需要考虑鞍点的问题。唯一的问题是，在在高维空间中，鞍点比局部最小值更常见，而在鞍点附近，朴素的梯度下降可能会需要指数长的时间才能逃离，这会极大拖慢训练速度\cite{schaeffer2019extendingstepsizerestrictiongradient}。这时候优化器就派上了用场。
+
 \subsection{利用链式法则简化梯度计算流程}
 
 回看 \cref{eq:gd}，我们发现梯度下降法的核心是计算梯度$\nabla \mathcal{L}(\mathbf{W}_n, b_n)$。那么如何计算这个梯度呢？

@@ -2,6 +2,8 @@
 
 现代人工智能的发展，离不开分析学、线性代数、概率论、统计学、优化理论等数学基础。它们为算法设计提供了坚实的理论支撑，也为模型分析和性能评估提供了工具。考虑到读者可能没有系统地学习过这些数学课程，我们将给出一些简明的数学基础知识，帮助读者快速掌握人工智能所需的数学工具。
 
+本章内容在任何相关数学教材中都有所提及，读者完全可以根据自己的知识情况和兴趣选择性的阅读本章或其他参考书籍。
+
 \section{简明微积分}
 
 分析学是几乎所有数学理论的基础，也是人工智能的基础之一。它主要研究函数、数列等的运算和性质，可以用来解释机器学习中遇到的很多现象。同时，分析学本身是一门非常严谨的学科，但我们机器学习领域比较重视运算、相对轻视分析，所以下文主要是从运算的角度来讲解分析学的基础知识。
@@ -282,8 +284,48 @@ d F(x) = f(x) dx
 \begin{mdframed}[frametitle=例：定积分的计算（定义）]
 求定积分$\int_0^a \sqrt{a^2 - x^2} dx$。
 
-发现曲线$y = \sqrt{a^2 - x^2}$是半径为$a$的圆的上半部分，所以这个定积分的值就是半径为$a$的圆的面积的一半，即$\pi a^2 / 2$。
+发现曲线$y = \sqrt{a^2 - x^2}$是半径为$a$的圆的四分之一（\cref{fig:quarter_circle_integral}），即$\pi a^2 / 4$，所以$\int_0^a \sqrt{a^2 - x^2} dx = \pi a^2 / 4$。
 \end{mdframed}
+
+
+\begin{figure}
+    \centering
+\begin{tikzpicture}
+    % 定义参数 a
+    \pgfmathsetmacro{\a}{1}
+
+    \begin{axis}[
+        axis lines = middle,          % 坐标轴穿过原点
+        xlabel = $x$, ylabel = $y$,
+        xmin = -\a-0.5, xmax = \a+0.5,
+        ymin = -0.2, ymax = \a+0.5,
+        xtick = {0, \a},              % 只显示 0 和 a 的刻度
+        xticklabels = {0, $a$},
+        ytick = {\a},
+        yticklabels = {$a$},
+        samples = 100,                % 提高曲线平滑度
+        axis equal = true,            % 保持横纵比例一致（显示真实的圆）
+        clip = false,                 % 允许标注超出轴范围
+        every axis plot post/.append style={thick}
+    ]
+
+    \addplot[domain=-\a:\a, smooth, thick, blue] 
+      {sqrt(\a^2 - x^2)};
+    \addlegendentry{$y=\sqrt{a^2-x^2}$}
+
+    % 2. 填充从 0 到 a 的积分区域（曲线与 x 轴之间）
+    \addplot[fill=gray!30, draw=none, domain=0:\a] 
+      {sqrt(\a^2 - x^2)} \closedcycle;
+
+    % 3. 在阴影区添加积分表达式（可选）
+    \node[font=\small] at (axis cs:0.7*\a, 0.3*\a) 
+      {$\displaystyle \int_0^a \sqrt{a^2-x^2}\,dx$};
+    
+    \end{axis}
+\end{tikzpicture}
+\caption{定积分 $\int_0^a \sqrt{a^2 - x^2} dx$ 的几何意义：半径为 $a$ 的圆的四分之一面积。}
+\label{fig:quarter_circle_integral}
+\end{figure}
 
 定积分的运算性质和不定积分类似，有线性性（可和、可数乘），也有区间可分性：
 \begin{equation}
@@ -362,8 +404,11 @@ I= \pi \int_{0}^{\pi/2} \frac{\sin x dx}{1 + \cos^2 x} = -\pi \int_{1}^{0} \frac
 
 第一类反常积分收敛的充分必要条件是：
 \begin{theorem}[第一类反常积分的收敛性]
-设函数$f(x)$在区间$[a, +\infty)$上有定义，则函数$f(x)$在区间$[a, +\infty)$上可积当且仅当函数$F(b) = \int_a^b f(x) dx$在区间$[a, +\infty)$上有界。
+设函数$f(x)$在区间$[a, +\infty)$上有定义，则函数$f(x)$在区间$[a, +\infty)$上可积当且仅当其原函数$F(x)$有极限$\lim_{x \to +\infty} F(x)$。
 \end{theorem}
+\begin{corollary}
+若函数$f(x)$在区间$[a, +\infty)$上有定义，且$f(x) \ge 0$，则函数$f(x)$在区间$[a, +\infty)$上可积当且仅当其原函数$F(x)$有界。
+\end{corollary}
 
 第一类反常积分的计算也可以利用牛顿-莱布尼茨公式：
 \begin{equation}

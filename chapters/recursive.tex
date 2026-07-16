@@ -158,9 +158,13 @@ LSTM的结构如图\ref{fig:lstm_structure}所示\cite{kexuefm-7888}。看起来
 
 \subsection{LSTM的梯度流动分析}
 
-我们自然可以像上文一样计算$\partial h_t / \partial h_{t-1}$，但由于LSTM的结构复杂，且有\cref{eq:lstm_hidden}，所以我们不妨先分析$\partial c_t / \partial c_{t-1}$，因此我们往这个方向分析。
+我们自然可以像上文一样计算$\partial h_t / \partial h_{t-1}$，但是LSTM的结构复杂，且有\cref{eq:lstm_hidden}，路径会引入耦合。
 
-和上文类似，我们只关心1维的情形。此时，根据求导公式，有
+但存在一条不会衰减的高速通路（CEC），即细胞状态的路径\cite{hochreiter1997long}。这是主要的项，其他路径（如经过输入门、输出门的路径）的梯度会受到 tanh 或 sigmoid 导数的影响，在长距离传播时更容易衰减\cite{naskreckilstm,hochreiter1997long}。因此，分析梯度消失问题时，最关键的是分析细胞状态 $c_t$ 的梯度流动。
+
+和上文类似，我们只关心1维的情形。
+
+此时，根据求导公式，有\cite{Greff2017}
 \begin{equation}\label{eq:lstm_dc_dc}
 \frac{\partial c_t}{\partial c_{t-1}} = f_t + \frac{\partial f_t}{\partial c_{t-1}} c_{t-1} + \frac{\partial i_t}{\partial c_{t-1}} \tilde{c}_t + i_t \frac{\partial \tilde{c}_t}{\partial c_{t-1}}.
 \end{equation}

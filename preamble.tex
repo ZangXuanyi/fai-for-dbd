@@ -8,8 +8,8 @@
 \setlist{nosep}
 \usepackage{booktabs}
 \usepackage[style=alphabetic, backend=biber, sorting=ynt]{biblatex}
-% \renewcommand*{\bibfont}{\small}
-\usepackage{xcolor}
+\usepackage{longtable,array,booktabs}
+\usepackage[table]{xcolor}
 \usepackage{multicol}
 \usepackage{minted}
 \setminted{
@@ -30,7 +30,10 @@
 \graphicspath{{images/}}
 \usepackage{subfigure}
 \usepackage{tikz}
-\usetikzlibrary{positioning, arrows.meta}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}   % 使用较新版本语法
+\usetikzlibrary{positioning, arrows.meta, intersections}
+\usepgfplotslibrary{fillbetween}  % 用于填充区域
 
 \usepackage{hyperref}
 \usepackage{nameref}
@@ -56,3 +59,10 @@
 \newtheorem{case}{情况}
 
 \addbibresource{references.bib}
+
+\renewcommand{\bibfont}{\footnotesize}
+
+% \defbibheading{chapterbib}[\refname]{%
+%   \section*{#1}%
+%   \addcontentsline{toc}{section}{#1}%
+% }
