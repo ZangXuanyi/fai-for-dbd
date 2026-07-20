@@ -179,7 +179,7 @@ x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\big(x_t - \sqrt{\beta_t}\,\varepsilon_t\big)
 
 实际上原文\cite{ho2020denoisingdiffusionprobabilisticmodels} 里，反向过程应从贝叶斯推导而来，不是直接解方程。原文中的标准DDPM反向过程是：
 \begin{equation}
-x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\big(x_t - \sqrt{\beta_t}\,\varepsilon_t\big) + \sigma_t z,\qquad z\sim\mathcal N(0,I)   
+x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\big(x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\,\varepsilon_t\big) + \sigma_t z,\qquad z\sim\mathcal N(0,I)   
 \end{equation}
 其中 $\sigma_t$ 是一个小的方差项。
 

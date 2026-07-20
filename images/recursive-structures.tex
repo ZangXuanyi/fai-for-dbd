@@ -1,3 +1,13 @@
+\documentclass[tikz]{standalone}
+\usepackage{ctex}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}   % 使用较新版本语法
+\usetikzlibrary{positioning, arrows.meta, intersections, calc, fit, backgrounds}
+\usepgfplotslibrary{fillbetween}  % 用于填充区域
+
+\begin{document}
+
 \begin{tikzpicture}[
     % 通用样式设定
     base/.style = {
@@ -144,3 +154,4 @@
 \end{scope}
 
 \end{tikzpicture}
+\end{document}

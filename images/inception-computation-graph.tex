@@ -1,0 +1,51 @@
+\documentclass[tikz]{standalone}
+\usepackage{ctex}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}   % 使用较新版本语法
+\usetikzlibrary{positioning, arrows.meta, intersections, calc, fit, backgrounds}
+\usepgfplotslibrary{fillbetween}  % 用于填充区域
+
+\begin{document}
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,
+        thick,
+        branch/.style={rectangle,draw,rounded corners=2pt,fill=blue!5,font=\sffamily\small,minimum width=1.8cm,minimum height=0.6cm},
+        main node/.style={circle,draw,font=\sffamily\small}
+    ]
+
+    % 前一层输出
+    \node[main node] (prev) {前一层};
+
+    % 四个并行分支
+    \node[branch] (b1) at (3, 1.8) {$1\times1$ 卷积};
+    \node[branch] (b2) at (3, 0.6) {$3\times3$ 卷积};
+    \node[branch] (b3) at (3, -0.6) {$5\times5$ 卷积};
+    \node[branch] (b4) at (3, -1.8) {$3\times3$ 最大池化};
+
+    % 拼接节点
+    \node[main node] (concat) at (6, 0) {$\|$};
+
+    % 下一层
+    \node[main node] (next) at (8.5, 0) {下一层};
+
+    % 连线：前一层到各分支
+    \path[every node/.style={font=\sffamily\small}]
+    (prev) edge[out=0, in=180] (b1)
+    (prev) edge[out=0, in=180] (b2)
+    (prev) edge[out=0, in=180] (b3)
+    (prev) edge[out=0, in=180] (b4);
+
+    % 各分支到拼接
+    \path[every node/.style={font=\sffamily\small}]
+    (b1) edge (concat)
+    (b2) edge (concat)
+    (b3) edge (concat)
+    (b4) edge (concat);
+
+    % 拼接到下一层
+    \draw[->] (concat) -- (next);
+
+    % 说明性文字
+    \node[above right=0.2cm and 0.1cm of concat, font=\sffamily\scriptsize] {拼接};
+\end{tikzpicture}
+\end{document}

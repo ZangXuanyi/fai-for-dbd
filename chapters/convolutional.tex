@@ -88,6 +88,13 @@ w_3 & w_4
 
 \subsection{卷积层的前向传播过程}
 
+\begin{figure}
+    \centering
+    \includestandalone{images/simple-cnn-computation-graph}
+    \caption{卷积层的前向传播示意图。输入为一个一阶张量，输出为一个一阶张量，卷积核也是一个一阶张量，卷积核大小为4，步长为1。每个输出元素都是输入张量中连续4个元素与卷积核权重的加权和。}
+    \label{fig:conv_forward}
+\end{figure}
+
 \paragraph{一层卷积}
 
 在明确了“卷积层实际执行的是互相关运算”之后，我们来形式化地叙述卷积层的前向传播过程：总体而言，一个卷积层一般接受一个三阶张量作为输入，通过一组可学习的卷积核（滤波器）对其进行互相关运算，再加上偏置，最终产生一个新的三阶张量作为输出。

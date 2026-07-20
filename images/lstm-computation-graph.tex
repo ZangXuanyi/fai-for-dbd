@@ -1,0 +1,95 @@
+\documentclass[tikz]{standalone}
+\usepackage{ctex}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}   % 使用较新版本语法
+\usetikzlibrary{positioning, arrows.meta, intersections, calc, fit, backgrounds}
+\usepgfplotslibrary{fillbetween}  % 用于填充区域
+\begin{document}
+\begin{tikzpicture}[
+        % ----- 全局样式 -----
+        ->,>=stealth,shorten >=1pt,auto,thick,
+        node distance = 2cm,
+        >=Stealth,
+        % RNN 主体 cell
+        gate/.style={draw, minimum width=1cm, minimum height=1cm, fill=blue!20},
+        outofcell/.style={draw, minimum width=1cm, minimum height=1cm, fill=green!20},
+        cstate/.style={circle,draw, minimum width=1cm, minimum height=1cm, fill=red!20},
+        ccstate/.style={circle,draw, minimum width=1cm, minimum height=1cm, fill=orange!20},
+        node/.style={circle, draw, minimum size=1cm, fill=yellow!20},
+        conv/.style={circle, draw, minimum size=0.2cm}
+    ]
+
+    \node[gate] (ft) {$f_t$};
+    \node[gate, right of=ft] (it) {$i_t$};
+    \node[ccstate, right of=it] (cct) {$\tilde{c}_t$};
+    \node[gate, right of=cct] (ot) {$o_t$};
+    \node[outofcell, above of=it, xshift=1cm] (ht) {$x_t$和$h_{t-1}$};
+    \node[conv, below of=ft] (convft) {$\odot$};
+    \node[conv, below of=it] (convit) {$\odot$};
+    \node[conv, below of=cct] (convcct) {$+$};
+    \node[conv, right of=ot] (convot) {$\odot$};
+    \node[cstate, below of=ot] (ct) {$c_t$};
+    \node[gate, right of=convot] (ft+1) {$f_{t+1}$};
+    \node[gate, right of=ft+1] (it+1) {$i_{t+1}$};
+    \node[ccstate, right of=it+1] (cct+1) {$\tilde{c}_{t+1}$};
+    \node[gate, right of=cct+1] (ot+1) {$o_{t+1}$};
+    \node[outofcell, above of=it+1, xshift=1cm] (ht+1) {$x_{t+1}$和$h_{t}$};
+    \node[conv, below of=ft+1] (convft+1) {$\odot$};
+    \node[conv, below of=it+1] (convit+1) {$\odot$};
+    \node[conv, below of=cct+1] (convcct+1) {$+$};
+    \node[conv, right of=ot+1] (convot+1) {$\odot$};
+    \node[cstate, below of=ot+1] (ct+1) {$c_{t+1}$};
+    \node[cstate, left of=convft] (ct-1) {$c_{t-1}$};
+    \node[cstate, left of=ct-1] (left) {$\cdots$};
+    \node[cstate, right of=ct+1] (right) {$\cdots$};
+
+    \begin{scope}[on background layer]
+        \node[
+            draw=blue!60,          % 边框颜色
+            rounded corners,       % 圆角
+            thick,
+            dashed,                % 虚线边框（可选）
+            fill=blue!5,           % 浅蓝色填充（可选）
+            inner sep=10pt,        % 内边距
+            fit={(ft) (it) (cct) (ot) (ct) (convft) (convit) (convcct) (convot)},
+            label={[blue!80, anchor=north west]south west:LSTM Cell}
+        ] (lstm-box) {};
+    \end{scope}
+
+
+    \path[every node/.style={font=\sffamily\small}]
+    (left) edge node [left] {} (ct-1)
+    (ct-1) edge[draw=red,thick] node [left] {} (convft)
+    (ft) edge node [left] {} (convft)
+    (it) edge node [left] {} (convit)
+    (cct) edge node [left] {} (convit)
+    (convit) edge node [left] {} (convcct)
+    (convcct) edge[draw=red,thick] node [left] {} (ct)
+    (ct) edge node [right] {$\tanh(\cdot)$} (convot)
+    (ot) edge node [left] {} (convot)
+    (ct) edge[draw=red,thick] node [left] {} (convft+1)
+    (ft+1) edge node [left] {} (convft+1)
+    (it+1) edge node [left] {} (convit+1)
+    (cct+1) edge node [left] {} (convit+1)
+    (convit+1) edge node [left] {} (convcct+1)
+    (convcct+1) edge[draw=red,thick] node [left] {} (ct+1)
+    (ct+1) edge node [right] {$\tanh(\cdot)$} (convot+1)
+    (ot+1) edge node [left] {} (convot+1)
+    (ct+1) edge[draw=red,thick] node [left] {} (right)
+    (ht) edge node [left] {} (ft)
+    (ht) edge node [left] {} (it)
+    (ht) edge node [left] {} (cct)
+    (ht) edge node [left] {} (ot)
+    (ht+1) edge node [left] {} (ft+1)
+    (ht+1) edge node [left] {} (it+1)
+    (ht+1) edge node [left] {} (cct+1)
+    (ht+1) edge node [left] {} (ot+1)
+    ;
+
+    \draw[->,red,thick] (convft.south) -- ($(convft.south)+(0,-0.3cm)$) -- ($(convcct.south)+(0,-0.3cm)$) -- (convcct.south);
+    \draw[->,red,thick] (convft+1.south) -- ($(convft+1.south)+(0,-0.3cm)$) -- ($(convcct+1.south)+(0,-0.3cm)$) -- (convcct+1.south);
+    \draw[->] (convot.north) -- ($(ht+1.west)+(-4cm, 0)$) -- (ht+1.west);
+
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,28 @@
+\documentclass[tikz]{standalone}
+\usepackage{ctex}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}   % 使用较新版本语法
+\usetikzlibrary{positioning, arrows.meta, intersections, calc, fit, backgrounds}
+\usepgfplotslibrary{fillbetween}  % 用于填充区域
+
+\begin{document}
+    \begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,node distance=1.4cm,
+        thick,main node/.style={circle,draw,font=\sffamily\small}]
+
+        % 定义节点
+        \node[main node] (x) {$\mathbf{x}$};
+        \node[main node] (f) [right of=x, xshift=0.8cm] {$f$};
+        \node[main node] (plus) [right of=f, xshift=0.8cm] {$+$};
+        \node[main node] (y) [right of=plus, xshift=0.8cm] {$\mathbf{y}$};
+
+        % 主路径
+        \path[every node/.style={font=\sffamily\small}]
+        (x) edge node {} (f)
+        (f) edge node {$f(\mathbf{x})$} (plus)
+        (plus) edge node {} (y);
+
+        % 残差跳跃连接：从 x 直接到加法器
+        \draw[->] (x.north) -- ++(0,0.5) -| node[pos=0.25, above] {恒等映射} (plus.north);
+    \end{tikzpicture}
+\end{document}
