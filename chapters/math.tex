@@ -1,13 +1,13 @@
 \chapter{人工智能的数学基础}
 
-\begin{mdframed}[frametitle=本节你将学到：]
+\begin{intro}
     \begin{itemize}
         \item 基础微积分、线性代数、概率论、统计学等数学知识。
         \item 极为初步的张量映射及其梯度计算法则。
     \end{itemize}
     本章内容在任何相关数学教材中都有所提及，读者完全可以根据自己的前置知识，跳过本章的内容，直接进入下一章。
     \textcolor{red}{\bfseries 不熟悉这些前置知识的读者，建议认真阅读本章内容，防止在之后的章节中遇到困难。}
-\end{mdframed}
+\end{intro}
 
 现代人工智能的发展，离不开分析学、线性代数、概率论、统计学、优化理论等数学基础。它们为算法设计提供了坚实的理论支撑，也为模型分析和性能评估提供了工具。考虑到读者可能没有系统地学习过这些数学课程，我们将给出一些简明的数学基础知识，帮助读者快速掌握人工智能所需的数学工具。
 
@@ -29,7 +29,7 @@
 
 类似的可以定义“无穷远处的极限”，即当$x \to +\infty$时，$f(x)$的值趋近于某个常数$A$，记作$\lim_{x \to +\infty} f(x) = A$。
 
-需要说明，函数在某一点处的极限是否存在，和函数在该点处是否有定义没有关系；但和函数在该点“附近”有没有定义、怎样定义有关系。比方说sinc函数$f(x) = \sin x / x$在点$x_0 = 0$处没有定义，但它在点$x_0 = 0$处有极限，见图像\ref{fig:sinc}。
+需要说明，函数在某一点处的极限是否存在，和函数在该点处是否有定义没有关系；但和函数在该点“附近”有没有定义、怎样定义有关系。比方说sinc函数$f(x) = \sin x / x$在点$x_0 = 0$处没有定义，但它在点$x_0 = 0$处有极限，见图像\cref{fig:sinc}。
 
 \begin{figure}
     \centering
@@ -53,21 +53,23 @@
     \item $\lim_{x \to x_0} (f(x)/g(x)) = \lim_{x \to x_0} f(x) / \lim_{x \to x_0} g(x)$，前提是$\lim_{x \to x_0} g(x) \neq 0$。
 \end{itemize}
 
-\begin{mdframed}[frametitle=例：求极限]
+\begin{example}{求极限}{}
     求这两个极限：
     \[ \lim_{x\to 2}\frac{2x^3+3x-1}{x^3+3}, \quad \lim_{x\to +\infty}\frac{3x^2+2x-1}{x^2-2} \]
+
+    \tcblower
 
     对于前一个极限，发现分子和分母在$x = 2$处都有定义，可以直接代入$x = 2$，得到$21/11$。
 
     对于后一个极限，将其进行适当的变形：
     \[ \frac{3x^2+2x-1}{x^2-2} = 3+\frac{2x+5}{x^2-2} \]
     发现当$x\to +\infty$时，$(2x+5)/(x^2-2) \to 0$，所以$\lim_{x\to +\infty}(3x^2+2x-1)/(x^2-2) = 3$。
-\end{mdframed}
+\end{example}
 
 \paragraph{连续}
 
 高中的时候经常说一个“函数连续”，当时说的是“图像连续不断”。现在我们给出一个更严谨的定义：
-\begin{definition}[函数在某点处连续]
+\begin{definition}{函数在某点处连续}{}
     设函数$f(x)$在点$x_0$处有定义，若$\lim_{x \to x_0} f(x) = f(x_0)$，则称函数$f(x)$在点$x_0$处连续。
 \end{definition}
 
@@ -87,11 +89,11 @@
 \end{enumerate}
 
 从某点连续出发，我们可以定义函数在某个开区间内连续：
-\begin{definition}[函数在开区间内连续]
+\begin{definition}{函数在开区间内连续}{}
     设函数$f(x)$在开区间$I = (a, b)$内有定义，若函数$f(x)$在区间$I$内的每一个点$x_0$都连续，则称函数$f(x)$在区间$I$内连续。
 \end{definition}
 
-\begin{definition}[函数在闭区间内连续]
+\begin{definition}{函数在闭区间内连续}{}
     设函数$f(x)$在闭区间$I = [a, b]$内有定义，若函数$f(x)$在区间$I$内的每一个点$x_0 \in (a, b)$都连续，且函数$f(x)$在点$x_0 = a$处的右极限等于其在点$x_0 = a$处的函数值，函数$f(x)$在点$x_0 = b$处的左极限等于其在点$x_0 = b$处的函数值，则称函数$f(x)$在闭区间$I$内连续。
 \end{definition}
 
@@ -101,7 +103,7 @@
 
 \paragraph{导数} 高中时我们已经知道：对于函数$f(x)$，$f'(x_0)$表示函数$f(x)$在点$x_0$处的变化率，即函数$f(x)$在点$x_0$处的切线斜率，写成数学语言是：
 
-\begin{definition}[导数]
+\begin{definition}{导数}{}
     对于函数$f(x)$，其在点$x_0$附近连续，如果存在极限：
     \begin{equation}\label{eq:derivative}
         f'(x_0) = \lim_{\Delta x \to 0} \frac{f(x_0 + \Delta x) - f(x_0)}{\Delta x}
@@ -112,7 +114,7 @@
 可导一定连续，但连续不一定可导。例如函数$f(x) = |x|$在点$x_0 = 0$处连续，但$\Delta x$从正数一侧趋近于0时，$\Delta y / \Delta x = 1$；$\Delta x$从负数一侧趋近于0时，$\Delta y / \Delta x = -1$。所以$\lim_{\Delta x \to 0} \Delta y / \Delta x$不存在。
 
 由导数的定义，我们很容易得到导函数的定义。
-\begin{definition}[导函数]
+\begin{definition}{导函数}{}
     对于函数$f(x)$，若其在一个区间$I = (a, b)$内的每一个点$x_0$都可导，则称函数$f(x)$在区间$I$内可导，也称该函数\textbf{一阶光滑}。
 \end{definition}
 
@@ -140,7 +142,7 @@
 我们知道，当$\Delta r < 1$时，$(\Delta r)^2 \ll \Delta r$。由此，是否可以利用$2\pi r \Delta r$来估计这个增量呢？我们计算产生的相对误差$ \pi (\Delta r)^2 / 2\pi r \Delta r = \Delta r / (2r)$，当$\Delta r$非常小时，这个误差是可以忽略的。
 
 对于更一般的情形，我们有：
-\begin{definition}[微分]
+\begin{definition}{微分}{}
     对于函数$y = f(x)$，若存在常数$A$，使得当$\Delta x \to 0$时，有：
     \begin{equation}
         \Delta y = f(x + \Delta x) - f(x) = A \Delta x + o(\Delta x)
@@ -152,7 +154,7 @@
     为函数$y = f(x)$在点$x$处的微分，其中$dx = \Delta x$，$dy = f(x + \Delta x) - f(x)$。
 \end{definition}
 从定义看到，函数的微分有两个特点：微分一定是个关于$\Delta x$的线性函数；微分与实际变化量的差值是一个高阶无穷小量$o(\Delta x)$。我们发现微分和导数之间有着密切的联系。事实上，下列定理成立：
-\begin{theorem}[微分与导数的关系]
+\begin{theorem}{微分与导数的关系}{}
     函数$y = f(x)$在点$x_0$处可微的充分必要条件是函数$y = f(x)$在点$x_0$处可导，且有：
     \begin{equation}
         dy = f'(x_0) dx
@@ -167,7 +169,15 @@
 
 对于常用函数的微分，我们可以使用其导数乘上$dx$来计算，例如$d(x^n) = nx^{n-1} dx$。
 
-利用微分，我们可以简化计算。例如计算$1.001^{3}$，我们可以令$x = 1$，$\Delta x = 0.001$，$y = x^3$，则$dy = 3x^2 dx = 3 \cdot 1^2 \cdot 0.001 = 0.003$，所以$1.001^3 \approx 1 + 0.003 = 1.003$，和精确值1.003003相差极小。
+利用微分，我们可以简化计算。
+\begin{example}{利用微分简化数值计算}{}
+计算$1.001^{3}$。
+
+\tcblower
+
+我们可以令$x = 1$，$\Delta x = 0.001$，$y = x^3$，则$dy = 3x^2 dx = 3 \cdot 1^2 \cdot 0.001 = 0.003$，所以$1.001^3 \approx 1 + 0.003 = 1.003$，和精确值1.003003相差极小。
+\end{example}
+
 
 \paragraph{一阶微分的形式不变性} 设$y = f(u)$，$u = g(x)$，则$y = f(g(x))$。我们知道$y' = f'(g(x)) g'(x)$，写成微分的形式就是$dy =  f'(g(x)) g'(x) dx$。
 
@@ -199,7 +209,7 @@
 
 \paragraph{利用导数研究函数} 导数研究了函数的变化率，因此可以利用导数来研究函数的单调性、极值、凹凸性等性质。单调性和极值的讨论在高中已经学过，我们这里仅讲述凹凸性。
 
-\begin{definition}[凸函数]
+\begin{definition}{凸函数}{}
     设函数$f(x)$在区间$I$上有定义，若对任意$x_1, x_2 \in I$，有：
     \begin{equation}
         f(\lambda x_1 + (1 - \lambda) x_2) \le \lambda f(x_1) + (1 - \lambda) f(x_2), \quad \forall \lambda \in [0, 1]
@@ -210,19 +220,19 @@
 反转上述式子中的不等号，就可以得到凹函数的定义。由于凸函数和凹函数的形式如此相似，所以每有一个凸函数的定理就会有一个对应的凹函数的定理。为了简化叙述，我们只给出凸函数的定理。
 
 容易证明，以下定理成立：
-\begin{theorem}[凸函数的充要条件]
+\begin{theorem}{凸函数的充要条件}{}
     设函数$f(x)$在区间$I$上有定义，且$f(x)$是凸函数当且仅当$f''(x)$存在，且$f''(x) \ge 0$。
 \end{theorem}
 
-凸函数有以下重要的性质：
-\begin{proposition}
+根据这个定理，我们直接得到下列推论：
+\begin{corollary}{凸函数的极值性质}{}
     设函数$f(x)$在区间$I$上是凸函数，则$f(x)$在区间$I$上至多有一个极小值点；如果$f(x)$在区间$I$上有极小值点，则该极小值点是该区间上的全局最小值点。
-\end{proposition}
+\end{corollary}
 这是非常重要的一个性质，对优化问题非常重要。
 
 \subsection{积分}
 \paragraph{不定积分} 我们知道，加法的逆运算是减法，乘法的逆运算是除法，指数运算的逆运算是对数运算。微分运算有没有自己的逆运算？答案是有的。
-\begin{definition}[原函数]
+\begin{definition}{原函数}{}
     设函数$f(x)$在区间$I$上有定义，若存在函数$F(x)$，使得$F'(x) = f(x)$，则称$F(x)$为$f(x)$的一个原函数，记作：
     \begin{equation}
         d F(x) = f(x) dx
@@ -230,7 +240,7 @@
 \end{definition}
 
 容易得知，对于多数函数而言，其原函数并不是唯一的。因为如果$F(x)$是$f(x)$的一个原函数，则$F(x) + C$也是$f(x)$的一个原函数，其中$C$是任意常数。于是我们有：
-\begin{definition}[不定积分]
+\begin{definition}{不定积分}{}
     设函数$f(x)$在区间$I$上存在原函数，那么所有原函数的集合称为$f(x)$的不定积分，记作：
     \begin{equation}
         \int f(x) dx = F(x) + C
@@ -265,18 +275,18 @@
 \end{equation}
 特别注意：这个公式不仅可以从左到右用（即“第一换元法”），也可以从右到左用（即“第二换元法”）。
 
-\begin{mdframed}[frametitle=例：不定积分的第一换元法]
+\begin{example}{不定积分的第一换元法}{}
     求积分：$\int \tan x dx$。
-
+    \tcblower
     我们知道$\tan x = \sin x / \cos x$，所以$\int \tan x dx = \int \sin x / \cos x dx$。令$u = \cos x$，则$du = -\sin x dx$，所以：
     \begin{equation}
         \int \tan x dx = -\int du / u = -\ln |u| + C = -\ln |\cos x| + C
     \end{equation}
-\end{mdframed}
+\end{example}
 
-\begin{mdframed}[frametitle=例：不定积分的第二换元法]
+\begin{example}{不定积分的第二换元法}{}
     求积分：$\int \sqrt{a^2 - x^2} dx$，其中$a > 0$。
-
+    \tcblower
     不妨设$x = a \sin t$，则$dx = a \cos t dt$，所以：
     \begin{equation}
         \int \sqrt{a^2 - x^2} dx = \int \sqrt{a^2 - a^2 \sin^2 t} \cdot a \cos t dt = a^2 \int \cos^2 t dt
@@ -290,44 +300,43 @@
     \begin{equation}
         \int \sqrt{a^2 - x^2} dx = \frac{a^2}{2} \arcsin(x/a) + \frac{x}{2} \sqrt{a^2 - x^2} + C
     \end{equation}
-
-\end{mdframed}
+\end{example}
 
 对应函数的积的微分$d(uv) = u dv + v du$，我们可以得到不定积分的分部积分公式：
 \begin{equation}
     \int u dv = uv - \int v du
 \end{equation}
 
-\begin{mdframed}[frametitle=例：不定积分的分部积分法]
+\begin{example}{不定积分的分部积分法}{}
     求不定积分$\int x^3 \ln x dx$。
-
+    \tcblower
     令$u = \ln x$，则$du = dx / x$；令$dv = x^3 dx$，则$v = x^4 / 4$。所以：
     \begin{equation}
         \int x^3 \ln x dx = \frac{x^4}{4} \ln x - \int \frac{x^4}{4} \cdot \frac{dx}{x} = \frac{x^4}{4} \ln x - \frac{1}{4} \int x^3 dx = \frac{x^4}{4} \ln x - \frac{x^4}{16} + C
     \end{equation}
-\end{mdframed}
+\end{example}
 
 \paragraph{定积分}
 
 在数学中对定积分的定义比不定积分严格得多，且来源和不定积分也不同。人们一开始认识到定积分，是用它来计算面积：
-\begin{definition}[定积分]
+\begin{definition}{定积分}{}
     设函数$f(x)$在区间$[a, b]$上有定义，则称由x轴、直线$x = a$、直线$x = b$和曲线$y = f(x)$所围成的图形的面积为函数$f(x)$在区间$[a, b]$上的定积分，记作$\int_a^b f(x) dx$。
 \end{definition}
 
 可以由以下手段判断一个函数是否可积。
-\begin{theorem}[定积分的存在性（Lebesgue定理）]
+\begin{theorem}{定积分的存在性（Lebesgue定理）}{}
     设函数$f(x)$在区间$[a, b]$上有定义，若函数间断点的测度为零（即函数间断点的个数有限，或者函数间断点的个数无限，但这些间断点的总长度为零），则函数$f(x)$在区间$[a, b]$上可积。
 \end{theorem}
 
-\begin{mdframed}[frametitle=例：定积分的计算（定义）]
+\begin{example}{定积分的计算（定义）}{}
     求定积分$\int_0^a \sqrt{a^2 - x^2} dx$。
-
+    \tcblower
     发现曲线$y = \sqrt{a^2 - x^2}$是半径为$a$的圆的四分之一（\cref{fig:quarter_circle_integral}），即$\pi a^2 / 4$，所以$\int_0^a \sqrt{a^2 - x^2} dx = \pi a^2 / 4$。
-\end{mdframed}
+\end{example}
 
 \begin{figure}
     \centering
-    \includestandalone{images/quarter-circle-integral}
+    \includestandalone[width=0.5\linewidth]{images/quarter-circle-integral}
     \caption{定积分 $\int_0^a \sqrt{a^2 - x^2} dx$ 的几何意义：半径为 $a$ 的圆的四分之一面积。}
     \label{fig:quarter_circle_integral}
 \end{figure}
@@ -339,7 +348,7 @@
 类似的，可以使用换元法（需要注意积分上下限的变化）和分部积分法来计算定积分。
 
 牛顿和莱布尼茨发现了定积分和不定积分之间的关系，这就是著名的牛顿-莱布尼茨公式：
-\begin{theorem}[牛顿-莱布尼茨公式]
+\begin{theorem}{牛顿-莱布尼茨公式}{}
     设函数$f(x)$在区间$[a, b]$上连续，且$F(x)$是函数$f(x)$的一个原函数，则有：
     \begin{equation}
         \int_a^b f(x) dx = F(b) - F(a)
@@ -349,9 +358,9 @@
 
 另外，由于定积分有上下限，所以有很多巧妙的方法计算。
 
-\begin{mdframed}[frametitle=例：定积分的计算（换元法）]
+\begin{example}{定积分的计算（换元法）}{}
     求定积分$I= \int_{0}^{\pi} \frac{x\sin x}{1 + \cos^2 x} dx$。
-
+    \tcblower
     由定积分的性质，我们将其拆成两段：
     \begin{equation}
         I= \int_{0}^{\pi/2} \frac{x\sin x}{1 + \cos^2 x} dx + \int_{\pi/2}^{\pi} \frac{x\sin x}{1 + \cos^2 x} dx
@@ -369,11 +378,11 @@
     \begin{equation}
         I= \pi \int_{0}^{\pi/2} \frac{\sin x dx}{1 + \cos^2 x} = -\pi \int_{1}^{0} \frac{du}{1 + u^2} = \pi \int_{0}^{1} \frac{du}{1 + u^2} = \pi \arctan 1 = \frac{\pi^2}{4}
     \end{equation}
-\end{mdframed}
+\end{example}
 
-\begin{mdframed}[frametitle=例：定积分的计算（分部积分法）]
+\begin{example}{定积分的计算（分部积分法）}{}
     计算定积分$\int_0^1 x \ln(x+1) dx$。
-
+    \tcblower
     我们令$u = \ln(x+1)$，则$du = dx/(x+1)$；令$dv = x dx$，则$v = x^2/2$。所以：
     \begin{equation}
         \int_0^1 x \ln(x+1) dx = \left. \frac{x^2}{2} \ln(x+1) \right|_0^1 - \int_0^1 \frac{x^2}{2} \cdot \frac{dx}{x+1} = \frac{1}{2} \ln 2 - \frac{1}{2} \int_0^1 (x - 1 + \frac{1}{x+1}) dx
@@ -382,12 +391,15 @@
     \begin{equation}
         \int_0^1 x \ln(x+1) dx = \frac{1}{2} \ln 2 - \frac{1}{2} \left.\left(  \frac{x^2}{2} - x + \ln(x+1)  \right)\right|_0^1 = \frac{1}{4}
     \end{equation}
-\end{mdframed}
+\end{example}
 
-\paragraph{反常积分} 在实际问题中，我们经常会遇到一些函数在某些点上不连续，或者积分区间是无穷区间的情况。对于这些情况，我们可以使用反常积分来处理。
+\paragraph{反常积分} 在实际问题中，我们经常会遇到一些函数在某些点上不连续，或者积分区间是无穷区间的情况。对于这些情况，我们可以使用反常积分来处理。反常积分也叫做“广义积分”，是定积分的推广。
+
+广义积分大多是难以计算的，所以数值解反而用的更多一些。
+
 \subparagraph{第一类反常积分}
-第一类反常积分指的是积分区间是无穷区间的情况。
-\begin{definition}[第一类反常积分]
+第一类反常积分指的是积分区间是无穷区间的情况，也叫无穷限积分。
+\begin{definition}{第一类反常积分}{}
     设函数$f(x)$在区间$[a, +\infty)$上有定义，若存在常数$I$，使得当$b \to +\infty$时，有：
     \begin{equation}
         \lim_{b \to +\infty} \int_a^b f(x) dx = I
@@ -403,17 +415,35 @@
 
 如果区间是$(-\infty, +\infty)$，第一类反常积分定义为$\int_{-\infty}^{+\infty} f(x) dx = \int_{-\infty}^{c} f(x) dx + \int_{c}^{+\infty} f(x) dx$，其中$c$是任意常数，且要求拆成的两个反常积分都收敛。
 
-我们不要将上下限都是无穷的第一类反常积分和柯西主值混淆。柯西主值是指$\lim_{a \to +\infty} \int_{-a}^{a} f(x) dx$，它要求积分的上下限以相同的速度趋于无穷大，这比第一类反常积分存在的要求要强得多。
+初学者容易将上下限都是无穷的第一类反常积分和柯西主值混淆。
+\begin{definition}{柯西主值}{}
+    设函数$f(x)$在区间$(-\infty, +\infty)$上有定义，若存在常数$I$，使得当$a \to +\infty$时，有：
+    \begin{equation}
+        \lim_{a \to +\infty} \int_{-a}^{a} f(x) dx = I
+    \end{equation}
+    则称$I$为函数$f(x)$在区间$(-\infty, +\infty)$上的柯西主值，记作：
+    \begin{equation}
+        \text{p.v.} \int_{-\infty}^{+\infty} f(x) dx = I
+    \end{equation}
+\end{definition}
+想要柯西主值存在，要求积分的上下限以相同的速度趋于无穷大，这比第一类反常积分存在的要求要强得多。
 
-例如$f(x) = x$，根据定义，$\int_{-\infty}^{+\infty} x dx$显然发散，但是$\lim_{a \to +\infty} \int_{-a}^{a} x dx = \lim_{a \to +\infty} 0 = 0$，所以柯西主值存在。这说明，柯西主值的存在并不能说明第一类反常积分的存在。
+有以下定理成立：
+\begin{theorem}{柯西主值存在的充分条件}{}
+    设函数$f(x)$在区间$(-\infty, +\infty)$上有定义，若反常积分$\int_{-\infty}^{+\infty} f(x) dx$收敛，则函数$f(x)$在区间$(-\infty, +\infty)$上的柯西主值存在，且有：
+    \begin{equation}
+        \text{p.v.} \int_{-\infty}^{+\infty} f(x) dx = \int_{-\infty}^{+\infty} f(x) dx
+    \end{equation}
+\end{theorem}
+但这个命题的逆命题不成立，例如$f(x) = x$，根据定义，反常积分显然发散，但是柯西主值为0。
 
 第一类反常积分收敛的充分必要条件是：
-\begin{theorem}[第一类反常积分的收敛性]
+\begin{theorem}{第一类反常积分的收敛性}{}
     设函数$f(x)$在区间$[a, +\infty)$上有定义，则函数$f(x)$在区间$[a, +\infty)$上可积当且仅当其原函数$F(x)$有极限$\lim_{x \to +\infty} F(x)$。
 \end{theorem}
-\begin{corollary}
+\begin{corollary}{}{}
     若函数$f(x)$在区间$[a, +\infty)$上有定义，且$f(x) \ge 0$，则函数$f(x)$在区间$[a, +\infty)$上可积当且仅当其原函数$F(x)$有界。
-\end{corollary}
+\end{corollary}{}{}
 
 第一类反常积分的计算也可以利用牛顿-莱布尼茨公式：
 \begin{equation}
@@ -421,29 +451,29 @@
 \end{equation}
 对应的换元法和分部积分法也可以类似地使用。
 
-\begin{mdframed}[frametitle=例：第一类反常积分的计算（定义）]
+\begin{example}{第一类反常积分的计算（定义）}{}
     计算反常积分$\int_{-\infty}^{+\infty} dx/(x^2+1)$。
-
+    \tcblower
     由公式可得，
     \begin{equation}
         \int_{-\infty}^{+\infty} \frac{dx}{x^2+1} = \left. \arctan x \right|_{-\infty}^{+\infty} = \frac{\pi}{2} - \left(-\frac{\pi}{2}\right) = \pi
     \end{equation}
-\end{mdframed}
+\end{example}
 
-\begin{mdframed}[frametitle=例：第一类反常积分的计算（换元）]
+\begin{example}{第一类反常积分的计算（换元）}{}
     计算反常积分$\int_1^{+\infty} dx/x\sqrt{1+x^2}$。
-
+    \tcblower
     令$x = 1/t$，则$dx = -dt/t^2$，所以：
     \begin{equation}
         \int_1^{+\infty} \frac{dx}{x\sqrt{1+x^2}} = \int_0^1 \frac{dt}{\sqrt{1+t^2}} = \left. \ln(t + \sqrt{1+t^2}) \right|_0^1 = \ln(1 + \sqrt{2})
     \end{equation}
 
     由这个实例可知，经过换元之后，有的反常积分可以化为定积分。
-\end{mdframed}
+\end{example}
 
-\begin{mdframed}[frametitle=例：第一类反常积分的计算（分部积分）]
+\begin{example}{第一类反常积分的计算（分部积分）}{}
     计算反常积分$\int_1^{+\infty} \frac{\arctan x}{x^3} dx$。
-
+    \tcblower
     令$u = \arctan x$，则$du = dx/(1+x^2)$；令$dv = dx/x^3$，则$v = -1/(2x^2)$。所以：
     \begin{equation}
         \int_1^{+\infty} \frac{\arctan x}{x^3} dx = \left. -\frac{\arctan x}{2x^2} \right|_1^{+\infty} + \int_1^{+\infty} \frac{dx}{2x^2(1+x^2)} = \frac{\pi}{8} + \frac{1}{2} \int_1^{+\infty} \left( \frac{1}{x^2} - \frac{1}{x^2+1} \right) dx
@@ -452,12 +482,14 @@
     \begin{equation}
         \int_1^{+\infty} \frac{\arctan x}{x^3} dx = \frac{\pi}{8} + \frac{1}{2} \left. \left( -\frac{1}{x} - \arctan x \right) \right|_1^{+\infty} = \frac{1}{2}
     \end{equation}
-\end{mdframed}
+\end{example}
+
+
 
 \subparagraph{第二类反常积分}
 
-第二类反常积分指的是被积函数在积分区间的某些点上不连续的情况。
-\begin{definition}[第二类反常积分]
+第二类反常积分指的是被积函数在积分区间的某些点上不连续的情况，也叫做“瑕积分”。
+\begin{definition}{第二类反常积分}{}
     设函数$f(x)$在区间$[a, b)$上有定义，且在点$b$处不连续，这样的$b$称为积分在区间$[a, b)$上的瑕点。若存在常数$I$，使得当$x \to b^-$时，有：
     \begin{equation}
         \lim_{x \to b^-} \int_a^x f(x) dx = I
@@ -476,7 +508,7 @@
 \end{equation}
 
 第二类反常积分收敛的充分必要条件是：
-\begin{theorem}[第二类反常积分的收敛性]
+\begin{theorem}{第二类反常积分的收敛性}{}
     设函数$f(x)$在区间$[a, b)$上有定义，且在点$b$处不连续，则函数$f(x)$在区间$[a, b)$上可积当且仅当函数$F(x) = \int_a^x f(x) dx$在区间$[a, b)$上有界。
 \end{theorem}
 
@@ -491,27 +523,52 @@
 
 我们以二元函数为例，其他更多元函数的情况类似。
 
-\paragraph{累次极限} 首先依然需要定义这个“趋近”的概念。设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在极限：
+\paragraph{累次极限} 首先依然需要定义这个“趋近”的概念。
+\begin{definition}{重极限}{}
+设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在极限：
 \begin{equation}
     \lim_{(x, y) \to (x_0, y_0)} f(x, y) = A
 \end{equation}
-则称函数$z = f(x, y)$在点$(x_0, y_0)$处有极限，记作$\lim_{(x, y) \to (x_0, y_0)} f(x, y) = A$。这被称作是“重极限”，因为它要求$(x, y)$以任意方式趋近于$(x_0, y_0)$，这是一个很弱的约束，所以处理重极限是非常困难的。
+则称函数$z = f(x, y)$在点$(x_0, y_0)$处有极限，记作$\lim_{(x, y) \to (x_0, y_0)} f(x, y) = A$。
+\end{definition}
+“重极限”要求$(x, y)$以任意方式趋近于$(x_0, y_0)$，这是一个很弱的约束，所以处理重极限是非常困难的。
 
-为了简化问题，我们考虑一个更强的条件：可以先令$x \to x_0$，再令$y \to y_0$，如果极限存在，则称函数$z = f(x, y)$在点$(x_0, y_0)$处有累次极限，记作$\lim_{y \to y_0} \lim_{x \to x_0} f(x, y) = A$。类似地，也可以先令$y \to y_0$，再令$x \to x_0$，如果极限存在，则称函数$z = f(x, y)$在点$(x_0, y_0)$处有累次极限，记作$\lim_{x \to x_0} \lim_{y \to y_0} f(x, y) = A$。
-
+为了简化问题，我们将这个条件加强，可以让$x$和$y$中的一个先趋近于$x_0$或$y_0$，然后再让另一个趋近于$x_0$或$y_0$，这就是“累次极限”。
+\begin{definition}{累次极限}{}
+设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在极限：
+\begin{equation}
+    \lim_{y \to y_0} \lim_{x \to x_0} f(x, y) = A
+\end{equation}
+则称函数$z = f(x, y)$在点$(x_0, y_0)$处有累次极限，记作$\lim_{y \to y_0} \lim_{x \to x_0} f(x, y) = A$
+\end{definition}
+累次极限是重极限的一种特殊情况：累次极限实际上是$x$和$y$以特定的顺序沿着坐标轴趋近于$(x_0, y_0)$。以下两个定理成立：
+\begin{theorem}{累次极限的充分条件}{}
+    如果函数$z = f(x, y)$在点$(x_0, y_0)$处有重极限，则函数$z = f(x, y)$在点$(x_0, y_0)$处有累次极限，且所有的累次极限都相等。
+\end{theorem}
+\begin{theorem}{重极限不存在的充分条件}{}
+    如果函数$z = f(x, y)$在点$(x_0, y_0)$处有两个不同的累次极限，则函数$z = f(x, y)$在点$(x_0, y_0)$处没有重极限。
+\end{theorem}
 事实上，累次极限是我们之后定义偏导数和多元函数的微分的基础。
 
 \paragraph{偏导数}
 
+偏导数是多元函数微分的基础。如果我们将不相干的变量看作常数，那么可以做出这样的定义：
+
+\begin{definition}{偏导数}{}
 设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在极限：
 \begin{equation}
     \frac{\partial z}{\partial x} = \lim_{\Delta x \to 0} \frac{f(x_0 + \Delta x, y_0) - f(x_0, y_0)}{\Delta x}
 \end{equation}
-则称函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏导数存在，记作$\partial z / \partial x$。类似地，可以定义函数$z = f(x, y)$在点$(x_0, y_0)$处对$y$的偏导数，记作$\partial z / \partial y$。
+则称函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏导数存在，记作$\partial z / \partial x$。
+\end{definition}
+类似地，可以定义函数$z = f(x, y)$在点$(x_0, y_0)$处对$y$的偏导数，记作$\partial z / \partial y$。
 
-显然，我们可以把不相干的自变量看成常数，于是多元函数求偏导就可以看成是一元函数求导数的推广了。
+多元函数求偏导的方法可以看成是一元函数求导数的推广。
 
-有偏导数，自然就有偏微分。设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在常数$A$，使得当$\Delta x \to 0$时，有：
+有偏导数，自然就有偏微分。
+
+\begin{definition}{偏微分}{}
+设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在常数$A$，使得当$\Delta x \to 0$时，有：
 \begin{equation}
     \Delta z = f(x_0 + \Delta x, y_0) - f(x_0, y_0) = A \Delta x + o(\Delta x)
 \end{equation}
@@ -519,25 +576,48 @@
 \begin{equation}
     \frac{\partial z}{\partial x} dx = A dx
 \end{equation}
-为函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏微分，其中$dx = \Delta x$，$\partial z / \partial x$是函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏导数。类似地，可以定义函数$z = f(x, y)$在点$(x_0, y_0)$处对$y$的偏微分，记作$\partial z / \partial y dy$。
+为函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏微分。
+\end{definition}
 
-可以看出，多元函数的偏微分和偏导数之间也有着密切的联系。事实上，下列定理成立：
-\begin{theorem}[偏微分与偏导数的关系]
+仿照一元函数的微分和导数之间的关系，我们可以得到多元函数的偏微分和偏导数之间的关系：
+\begin{theorem}{偏微分与偏导数的关系}{}
     函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏微分存在的充分必要条件是函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$的偏导数存在，且有：
     \begin{equation}
         \frac{\partial z}{\partial x} dx = A dx
     \end{equation}
 \end{theorem}
 
-在机器学习中，下面这个定义非常重要：
-\begin{definition}[梯度]
+既然有了“偏微分”，那么有没有“全微分”呢？答案是肯定的。
+\begin{definition}{全微分}{}
+设函数$z = f(x, y)$在点$(x_0, y_0)$附近有定义，若存在常数$A$和$B$，使得当$\Delta x \to 0$和$\Delta y \to 0$时，有：
+\begin{equation}
+    \Delta z = f(x_0 + \Delta x, y_0 + \Delta y) - f(x_0, y_0) = A \Delta x + B \Delta y + o(\sqrt{(\Delta x)^2 + (\Delta y)^2})
+\end{equation}
+则称函数$z = f(x, y)$在点$(x_0, y_0)$处有全微分，且称
+\begin{equation}
+    dz = A dx + B dy
+\end{equation}
+为函数$z = f(x, y)$在点$(x_0, y_0)$处的全微分。
+\end{definition}
+
+实际上可以看出，全微分就是偏微分的线性组合：
+\begin{theorem}{全微分与偏微分的关系}{}
+    函数$z = f(x, y)$在点$(x_0, y_0)$处有全微分的充分必要条件是函数$z = f(x, y)$在点$(x_0, y_0)$处对$x$和$y$的偏微分都存在，且有：
+    \begin{equation}
+        dz = \frac{\partial z}{\partial x} dx + \frac{\partial z}{\partial y} dy
+    \end{equation}
+\end{theorem}
+全微分是利用计算图进行反向梯度传播的重要依据。
+
+刚刚全微分是所有偏微分的线性组合。如果将这些偏微分不按照线性组合，而是组成一个向量，那么这个向量就是梯度向量。
+\begin{definition}{梯度}{}
     设函数$y = f(\mathbf{x})$，其中$\mathbf{x} = (x_1, x_2, \cdots, x_n)$，则称：
     \begin{equation}
         \nabla f(\mathbf{x}) = \left( \frac{\partial f}{\partial x_1}, \frac{\partial f}{\partial x_2}, \cdots, \frac{\partial f}{\partial x_n} \right)
     \end{equation}
     为函数$y = f(\mathbf{x})$的梯度。
 \end{definition}
-可以看出，梯度实际上就是对函数$y = f(\mathbf{x})$的所有自变量求偏导数之后组成的向量。梯度向量指出了“最陡上升”的方向，梯度向量的模长就是函数在该点处沿着最陡上升方向的变化率，如图\ref{fig:gradient_example}所示。
+可以看出，梯度实际上就是对函数$y = f(\mathbf{x})$的所有自变量求偏导数之后组成的向量。梯度向量指出了“最陡上升”的方向，梯度向量的模长就是函数在该点处沿着最陡上升方向的变化率，如图\cref{fig:gradient_example}所示。
 
 \begin{figure}
     \centering
@@ -548,11 +628,15 @@
 
 我们发现，在有限维中，我们处理$\mathbb{R}^n \to \mathbb{R}$的函数时完全可以参考$\mathbb{R} \to \mathbb{R}$的情况；而事实上我们就是这么做的，把多元函数一概不严谨的当作一元函数处理能大大减少思维负担。当$n=\infty$时，我们就进入了泛函分析的领域，这是另一个重要的分支，不过我们不会涉及。
 
-\paragraph{累次积分} 对于二元函数$z = f(x, y)$，我们可以定义累次积分。设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，则称：
+\paragraph{累次积分} 对于二元函数$z = f(x, y)$，我们可以定义累次积分。
+
+\begin{definition}{累次积分}{}
+设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，则称：
 \begin{equation}
     \int_a^b \int_c^d f(x, y) dy dx
 \end{equation}
 为函数$z = f(x, y)$在矩形区域$D$上的累次积分。类似地，也可以定义$\int_c^d \int_a^b f(x, y) dx dy$。
+\end{definition}
 
 为了计算累次积分，我们需要先计算内层积分，再计算外层积分。可以利用牛顿-莱布尼茨公式来计算累次积分：
 \begin{equation}
@@ -571,11 +655,17 @@
     \int_a^b \int_c^d f(x, y) dy dx = \int_{\theta_1}^{\theta_2} \int_{r_1}^{r_2} f(r \cos \theta, r \sin \theta) r dr d\theta
 \end{equation}
 
-\paragraph{重积分} 重积分和累次积分的来源不同，但殊途同归：对于二元函数，重积分的定义来自体积。设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，且函数$f(x, y)$在区域$D$上连续，则称：
+\paragraph{重积分} 重积分和累次积分的来源不同，但殊途同归：对于二元函数，重积分的定义来自体积。
+
+\begin{definition}{重积分}{}
+设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，且函数$f(x, y)$在区域$D$上连续，则称：
 \begin{equation}
     \iint_D f(x, y) d\sigma
 \end{equation}
-为函数$z = f(x, y)$在矩形区域$D$上的重积分，其中$d\sigma$表示区域$D$上的面积元素。类似地，也可以定义三重积分、四重积分等。
+为函数$z = f(x, y)$在矩形区域$D$上的重积分，其中$d\sigma$表示区域$D$上的面积元素。
+\end{definition}
+
+类似地，也可以定义三重积分、四重积分等。
 
 重积分不好计算，我们一般将其化成累次积分来计算。设函数$z = f(x, y)$在矩形区域$D = \{(x, y) | a \le x \le b, c \le y \le d\}$上有定义，且函数$f(x, y)$在区域$D$上连续，则有：
 \begin{equation}
@@ -583,10 +673,10 @@
 \end{equation}
 于是就可以利用刚刚的累次积分的计算方法来计算重积分。
 
-\begin{mdframed}[frametitle=例：重积分的计算（硬算）]
+\begin{example}{重积分的计算（硬算）}{}
     计算重积分$\iint_D (3x + 2y) \, d\sigma$
     其中区域 \( D \) 是由直线 \( x=0 \)、\( y=0 \) 和 \( x+y=1 \) 所围成的三角形区域。
-
+    \tcblower
     先确定积分限。区域 \( D \) 可表示为：
     \[
         0 \le x \le 1, \quad 0 \le y \le 1-x
@@ -601,7 +691,7 @@
     \end{align}
 
     这个例子说明了，对矩形或简单多边形区域可以直接选取直角坐标系、按顺序积分。这是计算重积分的基本方法，无需变量替换。这个重积分的几何意义可见\cref{fig:double_integral_example1}。
-\end{mdframed}
+\end{example}
 
 \begin{figure}
     \centering
@@ -610,9 +700,9 @@
     \label{fig:double_integral_example1}
 \end{figure}
 
-\begin{mdframed}[frametitle=例：重积分的计算（换元法）]
+\begin{example}{重积分的计算（换元）}{}
     计算重积分$\iint_D (x^2 + y^2) d\sigma$，其中$D$是由$x^2 + y^2 \le 1$和$y \ge 0$所围成的区域。
-
+    \tcblower
     将区域$D$转换为极坐标形式，有$x = r \cos \theta$，$y = r \sin \theta$，则有：
     \begin{align}
         \iint_D (x^2 + y^2) d\sigma &= \int_0^{\pi} \int_0^1 (r^2) r dr d\theta \\
@@ -623,7 +713,7 @@
         &= \frac{\pi}{4}
     \end{align}
     这个重积分的几何意义可见图\cref{fig:double_integral_example2}，在柱极坐标下的几何意义可见图\cref{fig:double_integral_polar}。
-\end{mdframed}
+\end{example}
 
 \begin{figure}
     \centering
@@ -723,13 +813,13 @@
 
 这两个其实还算简单。至于矩阵的乘积，就略微超出我们的认识了。为此，我们先定义矩阵和向量的乘法。
 
-受到\cref{eq:matrix_form}的启发，我们希望矩阵$A$和向量$\mathbf{x}$的乘积$A \mathbf{x}$能够表示线性方程组的左侧，结果的形状和$\mathbf{b}$一致。于是我们希望$A \mathbf{x}$是一个$m \times 1$的向量，其第$i$个元素为：
+受到\eqref{eq:matrix_form}的启发，我们希望矩阵$A$和向量$\mathbf{x}$的乘积$A \mathbf{x}$能够表示线性方程组的左侧，结果的形状和$\mathbf{b}$一致。于是我们希望$A \mathbf{x}$是一个$m \times 1$的向量，其第$i$个元素为：
 \begin{equation}
     (A \mathbf{x})_i = a_{i1} x_1 + a_{i2} x_2 + \cdots + a_{in} x_n = \sum_{j=1}^{n} a_{ij} x_j
 \end{equation}
 
 于是我们把这个定义成矩阵和向量的乘法。
-\begin{definition}[矩阵和向量的乘法]
+\begin{definition}{矩阵和向量的乘法}{}
     设$A = [a_{ij}]$是一个$m \times n$的矩阵，$\mathbf{x} = [x_j]$是一个$n \times 1$的向量，则$A \mathbf{x}$是一个$m \times 1$的向量，其第$i$个元素为：
     \begin{equation}
         (A \mathbf{x})_i = \sum_{j=1}^{n} a_{ij} x_j
@@ -755,7 +845,7 @@
 这说明，一个$m \times n$的矩阵$A$和一个$n \times k$的矩阵$X$相乘，得到一个$m \times k$的矩阵$B$！
 
 那么其中的数值是怎么计算的呢？我们希望$B$的第$i$行第$j$列的元素$b_{ij}$，就是矩阵$A$的第$i$行和矩阵$X$的第$j$列的内积。于是我们就有：
-\begin{definition}[矩阵和矩阵的乘法]
+\begin{definition}{矩阵和矩阵的乘法}{}
     设$A = [a_{ij}]$是一个$m \times n$的矩阵，$X = [x_{jk}]$是一个$n \times k$的矩阵，则$AX$是一个$m \times k$的矩阵，其第$i$行第$j$列的元素为：
     \begin{equation}
         (AX)_{ij} = \sum_{l=1}^{n} a_{il} x_{lj}
@@ -790,10 +880,10 @@
 此外，我们还有矩阵乘法的转置定律：$(AB)^\top = B^\top A^\top$。
 
 我们知道，对于任何实数，都有：$a \times 0 = 0$，$a \times 1 = a$。类似地，对于矩阵，我们有没有对应的矩阵呢？答案是有的。我们称为零矩阵和单位矩阵。
-\begin{definition}[零矩阵]
+\begin{definition}{零矩阵}{}
     设$A = [a_{ij}]$是一个$m \times n$的矩阵，若$a_{ij} = 0$，则称$A$为零矩阵，记作$0_{m \times n}$。
 \end{definition}
-\begin{definition}[单位矩阵]
+\begin{definition}{单位矩阵}{}
     设$A = [a_{ij}]$是一个$n \times n$的矩阵，若$a_{ij} = 1$，当$i = j$时；$a_{ij} = 0$，当$i \neq j$时，则称$A$为单位矩阵，记作$I_n$。这条对角线也被称为主对角线。
 \end{definition}
 
@@ -803,8 +893,7 @@
 
 我们再把目光回到方程组 \(A \mathbf{x} = \mathbf{b}\) 上。
 
-高中的时候，我们就已经知道：一个线性方程组，它要么有唯一解，要么无解，要么有无穷多解。
-模仿一元方程组 \(ax = b\)，如果 \(a \neq 0\)，方程有唯一解 \(x = a^{-1}b\)；如果 \(a = 0\)，方程要么无解，要么有无穷多解。放到矩阵方程里，我们自然要问：矩阵 \(A\) 的“非零”该怎样判断？那个 \(A^{-1}\) 又是什么，如何求出来？
+高中的时候，我们就已经知道：一个线性方程组，它要么有唯一解，要么无解，要么有无穷多解。模仿一元方程组 \(ax = b\)，如果 \(a \neq 0\)，方程有唯一解 \(x = a^{-1}b\)；如果 \(a = 0\)，方程要么无解，要么有无穷多解。放到矩阵方程里，我们自然要问：矩阵 \(A\) 的“非零”该怎样判断？那个 \(A^{-1}\) 又是什么，如何求出来？
 
 要回答这些问题，我们需要三件工具：行列式、秩和逆矩阵。
 
@@ -827,7 +916,7 @@
 绝对值 \(|\det(A)|\) 恰好等于以向量 \((a,c)\) 和 \((b,d)\) 为边的平行四边形的面积。如果面积为 \(0\)，说明两个向量共线，它们的信息是重复的。类似地，三阶行列式的绝对值表示三个向量张成的平行六面体体积。一般地，\(n\) 阶行列式可以理解成 \(n\) 个 \(n\) 维向量张成的“超体积”。体积为零，意味着这些向量线性相关——至少有一个向量是其余向量的线性组合。
 
 更正式的递归定义是：
-\begin{definition}[行列式]
+\begin{definition}{行列式}{}
     设 \(A = [a_{ij}]\) 是一个 \(n \times n\) 方阵，\(n \ge 2\)。对于任意 \(i\)，定义 \(A_{ij}\) 为去掉第 \(i\) 行第 \(j\) 列的 \((n-1) \times (n-1)\) 子矩阵。则行列式定义为：
     \[
         \det(A) = \sum_{j=1}^{n} (-1)^{i+j} a_{ij} \det(A_{ij}) .
@@ -845,7 +934,7 @@
 
 利用这些性质，通过矩阵的“行变换”我们可以把矩阵化成上三角形式，然后把主对角线元素相乘，就得到行列式。这让手算行列式容易很多。
 
-\begin{mdframed}[frametitle=例：计算行列式]
+\begin{example}{行列式的计算}{}
     计算
     \[
         \begin{vmatrix}
@@ -854,6 +943,7 @@
             0 & 1 & -1
         \end{vmatrix},
     \]
+    \tcblower
     将第一行乘以 \(-2\) 加到第二行，变成
     \[
         \begin{vmatrix}
@@ -871,7 +961,7 @@
         \end{vmatrix},
     \]
     于是行列式值为 \(1 \times 1 \times (-2) = -2\)。
-\end{mdframed}
+\end{example}
 
 最重要的是：方阵 \(A\) 可逆 的充分必要条件是 \(\det(A) \neq 0\)。此时方程组 \(A\mathbf{x} = \mathbf{b}\) 对任意 \(\mathbf{b}\) 都有唯一解。若 \(\det(A) = 0\)，就像一元方程里 \(a=0\)，解要么不存在，要么有无穷多。
 
@@ -879,7 +969,26 @@
 
 并不是所有矩阵都是方阵，而且即使方阵也可能行列式为 \(0\)。我们还需要一个更普遍的工具来判断方程组解的情况，这就是矩阵的秩。
 
-先理解“线性无关”。一组向量中，如果任何一个向量都不能写成其余向量的线性组合，这组向量就是线性无关的，否则称为线性相关。矩阵的秩，记作 \(\operatorname{rank}(A)\)，定义为它最大线性无关的行数（也等于最大线性无关的列数）。直觉上，秩告诉我们在矩阵中有多少行（或列）是“真正独立”、“能提供新信息”的。
+先理解“线性无关”。一组向量中，如果任何一个向量都不能写成其余向量的线性组合，这组向量就是线性无关的，否则称为线性相关。正式的表述大致是这样的：
+\begin{definition}{向量组的线性无关}
+    设 \(\mathbf{v}_1, \mathbf{v}_2, \ldots, \mathbf{v}_k\) 是 \(n\) 维向量组，若方程
+    \[
+        c_1 \mathbf{v}_1 + c_2 \mathbf{v}_2 + \cdots + c_k \mathbf{v}_k = 0
+    \]
+    的唯一解是 \(c_1 = c_2 = \cdots = c_k = 0\)，则称向量组 \(\{\mathbf{v}_1, \mathbf{v}_2, \ldots, \mathbf{v}_k\}\) 线性无关。否则（即存在不全为零的一组实数$c_1, c_2, \ldots, c_k$，使得上述方程成立），称向量组线性相关。
+\end{definition}
+
+如果把矩阵的每一行看作一个向量，那么矩阵的行向量组就是这些行向量组成的向量组。同理，矩阵的列向量组就是这些列向量组成的向量组。因此能够定义矩阵的秩：
+\begin{definition}{矩阵的秩}{}
+    设 \(A\) 是一个 \(m \times n\) 矩阵，矩阵 \(A\) 的秩（rank）定义为它最大线性无关的行向量组的个数（也等于最大线性无关的列向量组的个数）。记作 \(\operatorname{rank}(A)\)。
+\end{definition}
+
+以下定理成立。
+\begin{theorem}{}{}
+    任意矩阵的行秩等于其列秩。
+\end{theorem}
+
+直觉上，秩告诉我们在矩阵中有多少行（或列）是“真正独立”、“能提供新信息”的。
 
 对线性方程组 \(A\mathbf{x} = \mathbf{b}\)（\(A\) 为 \(m\times n\) 矩阵），考虑增广矩阵 \([A \mid \mathbf{b}]\)，解的情况完全由秩决定：
 \begin{enumerate}
@@ -888,19 +997,23 @@
     \item 若 \(\operatorname{rank}(A) \neq \operatorname{rank}([A \mid \mathbf{b}])\)，方程组无解。
 \end{enumerate}
 
-秩怎么求？同样可以通过行变换把矩阵化成“行阶梯形”，数一数非零行的数目即可。这是计算机程序中常用的方法。
+秩怎么求？直接解方程组可能不容易，但是同样可以通过行变换把矩阵化成“行阶梯形”，数一数非零行的数目即可。这是计算机程序中常用的方法。
 
 在机器学习中，秩有直接的应用。例如，线性回归的设计矩阵 \(X\)（每一行是一个样本，每一列是一个特征）通常列数等于特征个数 \(p\)。如果某些特征近似是其他特征的线性组合（称为共线性），那么 \(\operatorname{rank}(X) < p\)，此时 \(X^\top X\) 的行列式为 \(0\)，无法直接求逆来得到正规方程的唯一解——这也是为什么有时必须使用正则化的原因。
 
-\paragraph{逆矩阵}
+\paragraph{方阵的逆}
 
-现在回到可逆的方阵。对于 \(n \times n\) 矩阵 \(A\)，如果存在矩阵 \(B\) 使得
-\[
-    AB = BA = I_n,
-\]
-就称 \(A\) 可逆，\(B\) 称为 \(A\) 的逆矩阵，记作 \(A^{-1}\)。这里 \(I_n\) 是 \(n\) 阶单位矩阵。逆矩阵就像数的倒数：\(a^{-1}a = 1\)。
+现在回到可逆的方阵。
+\begin{definition}{可逆矩阵}{}
+    设 \(A\) 是一个 \(n \times n\) 的方阵，如果存在一个 \(n \times n\) 的矩阵 \(B\)，使得
+    \[
+        AB = BA = I_n,
+    \]
+    则称 \(A\) 可逆，\(B\) 称为 \(A\) 的逆矩阵，记作 \(A^{-1}\)。
+\end{definition}
+逆矩阵就像数的倒数：\(a^{-1}a = 1\)。
 
-只有方阵才有逆矩阵，而且可逆的充分必要条件是 \(\det(A) \neq 0\)。此时，解方程 \(A\mathbf{x} = \mathbf{b}\) 就可以直接写成
+必须说明：只有方阵才有逆矩阵，而且可逆的充分必要条件是 \(\det(A) \neq 0\)。此时，解方程 \(A\mathbf{x} = \mathbf{b}\) 就可以直接写成
 \[
     \mathbf{x} = A^{-1} \mathbf{b},
 \]
@@ -919,10 +1032,12 @@
             \begin{bmatrix} d & -b \\ -c & a
             \end{bmatrix}.
         \]
+        余子式指的是将矩阵的第 \(i\) 行第 \(j\) 列的元素去掉后，剩下的 \((n-1) \times (n-1)\) 子矩阵的行列式。伴随矩阵的第 \(i\) 行第 \(j\) 列元素就是余子式乘以 \((-1)^{i+j}\)。
     \item 初等行变换法（大小通吃）。构造增广矩阵 \([A \mid I]\)，对它施行行变换，将左边变成单位矩阵的同时，右边就自动变成了 \(A^{-1}\)，即
         \[
             [A \mid I] \;\xrightarrow{\text{行变换}}\; [I \mid A^{-1}].
         \]
+        这是计算机中最常用的手段，因为它可以处理任意大小的矩阵。其时间复杂度为 \(O(n^3)\)（有$n^2$个元素，每个元素约需要$n$次运算），比伴随矩阵法更快。
 \end{enumerate}
 
 逆矩阵的运算性质也与倒数相似：
@@ -939,11 +1054,31 @@
 \]
 这里矩阵求逆将问题从“解方程”一步到位。当特征数很多时，直接求逆计算量很大，实际计算中通常采用更高效的数值方法（如共轭梯度法），但其数学本质依然源于逆矩阵的思想。
 
+\paragraph{一般矩阵的伪逆}
+
+我们知道，只有方阵能够求逆。那么，对于非方阵怎么办呢？我们可以引入伪逆的概念。
+\begin{definition}{伪逆}{}
+    设 \(A\) 是一个 \(m \times n\) 的矩阵，\(A^+\) 是一个 \(n \times m\) 的矩阵，如果满足
+    \[
+        AA^+A = A, \quad A^+AA^+ = A^+, \quad (AA^+)^\top = AA^+, \quad (A^+A)^\top = A^+A,
+    \]
+    则称 \(A^+\) 为 \(A\) 的\textbf{摩尔-彭若斯伪逆}（Moore-Penrose pseudoinverse）。
+\end{definition}
+容易得到伪逆具有显然的性质：
+\begin{itemize}
+    \item 如果 \(A\) 可逆，则 \(A^+ = A^{-1}\)；
+    \item 如果 \(A\) 是列满秩矩阵，则 \(A^+ = (A^\top A)^{-1} A^\top\)；
+    \item 如果 \(A\) 是行满秩矩阵，则 \(A^+ = A^\top (A A^\top)^{-1}\)。
+\end{itemize}
+伪逆的其他性质和方阵的逆基本一致，这里不再赘述了。
+
+伪逆的计算方法是奇异值分解，这在下文会讲到。
+
 \subsection{特征值与特征向量}
 
 我们已经知道，一个矩阵左乘一个向量，得到的结果是另一个向量。这个过程可以看作是对向量进行线性变换。对于大多数向量来说，这个变换会改变它们的方向和长度。一个自然的问题是：是否存在某些“特别”的向量，在变换之后方向保持不变，只是被拉长或缩短了？这便引出了特征值与特征向量的概念。
 
-\begin{definition}[特征值与特征向量]
+\begin{definition}{特征值与特征向量}{}
     设 \(A\) 是一个 \(n \times n\) 的方阵。如果存在一个非零向量 \(\mathbf{v} \in \mathbb{R}^n\) 和一个数 \(\lambda \in \mathbb{C}\)，使得
     \[
         A\mathbf{v} = \lambda \mathbf{v},
@@ -965,10 +1100,11 @@
 
 得到特征值 \(\lambda\) 后，代入 \((A - \lambda I)\mathbf{v} = \mathbf{0}\)，解出的非零解向量就是对应的特征向量。
 
-\begin{mdframed}[frametitle=例：求特征值与特征向量]
+\begin{example}{求特征值与特征向量}{}
     设 \(A =
         \begin{bmatrix} 4 & 1 \\ 2 & 3
-    \end{bmatrix}\)。求特征值：
+    \end{bmatrix}\)。求特征值。
+    \tcblower
     \[
         \det
         \begin{pmatrix} 4-\lambda & 1 \\ 2 & 3-\lambda
@@ -1007,7 +1143,7 @@
     \end{bmatrix} = 5\mathbf{v}_1\)，\(A\mathbf{v}_2 =
         \begin{bmatrix}2\\-4
     \end{bmatrix}=2\mathbf{v}_2\)。
-\end{mdframed}
+\end{example}
 
 特征值有以下重要性质：
 \begin{itemize}
@@ -1045,6 +1181,22 @@
 \]
 而 \(\Lambda^k = \operatorname{diag}(\lambda_1^k, \dots, \lambda_n^k)\)。这在马尔可夫链、线性动力系统中有重要作用。
 
+此外，矩阵的逆可以通过特征值分解来计算。以下定理成立：
+\begin{theorem}{}{}
+    方阵$A$和$A^{-1}$有相同的特征向量，且对应的特征值互为倒数。
+\end{theorem}
+于是拉出一个定理：
+\begin{theorem}{方阵可逆的充要条件}{}
+    方阵$A$可逆的充要条件是它的所有特征值都不为零。
+\end{theorem}
+从而可以得到
+\[
+    A^{-1} = V \Lambda^{-1} V^{-1},
+\]
+其中 \(\Lambda^{-1} = \operatorname{diag}(\lambda_1^{-1}, \dots, \lambda_n^{-1})\)。
+
+特别的，如果最大特征值与最小特征值的绝对值相差极大，那么称矩阵$A$是\textbf{病态矩阵}（ill-conditioned matrix）。在数值计算中，病态矩阵会导致计算结果不稳定，误差放大，所以不适宜直接求逆，而是使用正则化或其他数值方法。
+
 \paragraph{机器学习中的典型应用：主成分分析（PCA）}
 
 降维是机器学习中非常重要的一项预处理技术。给定数据中心化后的特征矩阵 \(X\)（\(m\) 个样本，\(n\) 个特征），其协方差矩阵为 \(C = \frac{1}{m-1} X^\top X\)，它是一个实对称矩阵。对 \(C\) 进行特征值分解：
@@ -1057,15 +1209,15 @@
 
 特征值分解要求矩阵是方阵，且需要可对角化。然而现实中的矩阵常常是长方形的（样本数不等于特征数），或者我们不想受限于方阵的条件。有没有一种更普遍、对任意矩阵都成立的分解方式？有的，这就是\textbf{奇异值分解}（Singular Value Decomposition，SVD）。
 
-\begin{theorem}[奇异值分解]
+\begin{theorem}{奇异值分解}{}
     设 \(A\) 为任意 \(m \times n\) 实矩阵，则存在分解
     \[
         A = U \Sigma V^\top,
     \]
     其中
     \begin{itemize}
-        \item \(U\) 是 \(m \times m\) 的正交矩阵（列称为左奇异向量）；
-        \item \(V\) 是 \(n \times n\) 的正交矩阵（列称为右奇异向量）；
+        \item \(U\) 是 \(m \times m\) 的正交矩阵，称为左奇异矩阵，其列称为左奇异向量；
+        \item \(V\) 是 \(n \times n\) 的正交矩阵，称为右奇异矩阵，其列称为右奇异向量；
         \item \(\Sigma\) 是 \(m \times n\) 的对角矩阵，主对角线上的元素 \(\sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_r > 0\)（\(r \le \min(m,n)\)）称为\textbf{奇异值}，其余位置全为零。
     \end{itemize}
 \end{theorem}
@@ -1080,13 +1232,23 @@ SVD的计算过程非常复杂：
     \item 对于正奇异值 \(\sigma_i > 0\)，左奇异向量可由 \(\mathbf{u}_i = \frac{1}{\sigma_i} A \mathbf{v}_i\) 得到；若 \(m > r\)，还需找齐 \(U\) 剩下的零空间标准正交基。
 \end{enumerate}
 
-\begin{mdframed}[frametitle=例：奇异值分解]
+\begin{example}{奇异值分解的计算}{}
     \(A =
         \begin{bmatrix} 1 & 1 \\ 0 & 1 \\ 0 & 0
-    \end{bmatrix}\)。先求 \(A^\top A =
+    \end{bmatrix}\)，奇异值分解。
+    \tcblower
+    这里只给出求解的思路。
+
+    先求 \(A^\top A =
         \begin{bmatrix} 1 & 1 \\ 1 & 2
     \end{bmatrix}\)。其特征方程为 \((1-\lambda)(2-\lambda)-1 = \lambda^2 - 3\lambda + 1 = 0\)，特征值 \(\lambda_1 = \frac{3+\sqrt{5}}{2} \approx 2.618\)，\(\lambda_2 = \frac{3-\sqrt{5}}{2} \approx 0.382\)。奇异值 \(\sigma_1 = \sqrt{\lambda_1} \approx 1.618\)，\(\sigma_2 = \sqrt{\lambda_2} \approx 0.618\)。进而求出 \(V\) 的特征向量，再通过 \(A\mathbf{v}_i\) 得到 \(U\) 的前两列，最后一列补一个正交向量即可。
-\end{mdframed}
+\end{example}
+
+奇异值分解可以用于求一般矩阵的伪逆，即：
+\[
+    A^+ = V \Sigma^+ U^\top,
+\]
+其中 \(\Sigma^+\) 是将 \(\Sigma\) 中非零奇异值取倒数、零奇异值保留为0的新矩阵。
 
 奇异值分解在计算机科学中有广泛应用，尤其在数据降维、压缩和推荐系统中。一个重要的性质是：奇异值分解提供了矩阵的最优低秩近似。
 
@@ -1111,13 +1273,11 @@ SVD的计算过程非常复杂：
 
 \paragraph{向量的范数}
 
-在平面坐标系里，点 \((x_1, x_2)\) 到原点的距离（即向量 \(\mathbf{x} = (x_1, x_2)\) 的长度）就是 \(\sqrt{x_1^2 + x_2^2}\)。推广到 \(n\) 维空间，这就是 \textbf{L2 范数}：
-\[
-    \|\mathbf{x}\|_2 = \sqrt{x_1^2 + x_2^2 + \dots + x_n^2}.
-\]
+在平面坐标系里，点 \((x_1, x_2)\) 到原点的距离（即向量 \(\mathbf{x} = (x_1, x_2)\) 的长度）就是 \(\sqrt{x_1^2 + x_2^2}\)。
+
 但“长度”未必只有这一种定义。根据不同场景，我们可以选择不同的范数来度量向量。常用范数都满足正定性（非零向量的范数大于零）、齐次性（\(\|\alpha \mathbf{x}\| = |\alpha| \|\mathbf{x}\|\)）和三角不等式（\(\|\mathbf{x} + \mathbf{y}\| \le \|\mathbf{x}\| + \|\mathbf{y}\|\)），因此都可以作为一种“距离”的测量。
 
-\begin{definition}[L1 范数]
+\begin{definition}{L1 范数}{}
     向量 \(\mathbf{x} = (x_1, \dots, x_n)\) 的 L1 范数定义为各分量绝对值之和：
     \[
         \|\mathbf{x}\|_1 = |x_1| + |x_2| + \dots + |x_n|.
@@ -1125,7 +1285,7 @@ SVD的计算过程非常复杂：
     在平面上，它描述的是“曼哈顿距离”：只能沿坐标轴方向行走时，到原点需要经过的总路程。
 \end{definition}
 
-\begin{definition}[L2 范数（欧几里得范数）]
+\begin{definition}{L2 范数（欧几里得范数）}{}
     就是高中熟悉的向量模长，定义为各分量平方和的平方根：
     \[
         \|\mathbf{x}\|_2 = \sqrt{x_1^2 + x_2^2 + \dots + x_n^2}.
@@ -1133,7 +1293,7 @@ SVD的计算过程非常复杂：
     又称欧几里得范数，对应两点之间的直线距离。
 \end{definition}
 
-\begin{definition}[无穷范数（最大范数）]
+\begin{definition}{无穷范数（最大范数）}{}
     取所有分量绝对值的最大值：
     \[
         \|\mathbf{x}\|_\infty = \max\{|x_1|, |x_2|, \dots, |x_n|\}.
@@ -1151,7 +1311,7 @@ SVD的计算过程非常复杂：
 
 向量有长度，矩阵作为一个整体，我们也需要一个数来刻画它的“大小”。最常用也最自然的一种矩阵范数是\textbf{弗罗贝尼乌斯范数}。
 
-\begin{definition}[弗罗贝尼乌斯范数]
+\begin{definition}{弗罗贝尼乌斯范数}{}
     设 \(A\) 为 \(m \times n\) 矩阵，将其所有元素的平方求和再开方：
     \[
         \|A\|_F = \sqrt{\sum_{i=1}^m \sum_{j=1}^n a_{ij}^2}.
@@ -1202,7 +1362,7 @@ SVD的计算过程非常复杂：
 \paragraph{标量对矩阵的导数：矩阵梯度}
 
 现在，考虑输入是一个 $m \times n$ 矩阵 $X$，输出仍然是一个标量 $f(X)$。那么，$f$ 对 $X$ 中每一个元素 $x_{ij}$ 都可以求偏导数。很自然地，我们可以把这些偏导数按照 $X$ 的形状排列起来，构成一个同样大小的矩阵，称为矩阵梯度：
-\begin{definition}[矩阵梯度]
+\begin{definition}{矩阵梯度}{}
     设 $f: \mathbb{R}^{m \times n} \to \mathbb{R}$ 为标量函数，则 $f$ 对矩阵 $X$ 的梯度定义为一个 $m \times n$ 的矩阵：
     \begin{equation}
         \nabla_X f =
@@ -1220,7 +1380,7 @@ SVD的计算过程非常复杂：
 \paragraph{向量对向量的导数：雅可比矩阵}
 
 情况再复杂一点：输入是 $n$ 维向量 $\mathbf{x}$，输出是 $p$ 维向量 $\mathbf{f}(\mathbf{x}) = (f_1(\mathbf{x}), \dots, f_p(\mathbf{x}))^\top$。这时，每一个输出分量 $f_i$ 对每一个输入分量 $x_j$ 都有一个偏导数，共 $p \times n$ 个。把它们按照“第 $i$ 行第 $j$ 列是 $\partial f_i / \partial x_j$”的规则排成一个矩阵，就得到了\textbf{雅可比矩阵}（Jacobian matrix）：
-\begin{definition}[雅可比矩阵]
+\begin{definition}{雅可比矩阵}{}
     设 $\mathbf{f}: \mathbb{R}^n \to \mathbb{R}^p$，其雅可比矩阵 $J_{\mathbf{f}}$ 为 $p \times n$ 矩阵：
     \begin{equation}
         J_{\mathbf{f}} =
@@ -1243,13 +1403,13 @@ SVD的计算过程非常复杂：
 \]
 更一般地，输入是 $k$ 阶张量，输出是 $l$ 阶张量，那么梯度将是一个 $k+l$ 阶张量。虽然这在数学上很“重”，但在编程中，自动求导框架已经为我们默默地管理好了这些高维数组。
 
-\begin{mdframed}[frametitle=例：矩阵函数的梯度]
+\begin{example}{任意张量的导数}{}
     设 $\mathbf{x} \in \mathbb{R}^n$ 为输入向量，$W \in \mathbb{R}^{n \times m}$ 为权重矩阵，$\mathbf{b} \in \mathbb{R}^m$ 为偏置向量，定义
     \[
         \mathbf{f}(W) = W^\top \mathbf{x} + \mathbf{b} .
     \]
     这里 $\mathbf{f}$ 的输出是一个 $m$ 维向量。我们想计算 $\mathbf{f}$ 对 $W$ 的梯度。
-
+    \tcblower
     根据严格定义，这是一个向量对矩阵的导数，结果应该是一个三阶张量。具体写出来：
     \[
         f_i = \sum_{k=1}^n W_{ki} x_k + b_i, \qquad i = 1,\dots, m .
@@ -1267,7 +1427,7 @@ SVD的计算过程非常复杂：
     在实际编程中，我们往往不需要亲自处理这个三阶张量。一个更常见的做法是：假设最终我们关心的是某个标量损失函数 $\mathcal{L}$ 对 $W$ 的梯度。利用链式法则，我们可以直接从标量 $\mathcal{L}$ 出发，计算出 $\nabla_W \mathcal{L}$，其结果就是一个与 $W$ 形状相同的矩阵。那为什么张量的阶数反而经过一次链式法则之后还下降了呢？这是因为中间的高阶张量结构因为张量积而被“压缩”了，最终只留下了与参数同形的梯度矩阵！
 
     因此我们常说“梯度与参数同形”，这对应着本节第二部分“标量对矩阵的梯度”。
-\end{mdframed}
+\end{example}
 
 \subsection{张量梯度的运算法则}
 
@@ -1304,15 +1464,15 @@ SVD的计算过程非常复杂：
     P(A_i \mid B) = \frac{P(B \mid A_i)P(A_i)}{\sum_j P(B \mid A_j)P(A_j)}, \quad \bigsqcup_i A_i = \Omega, \quad P(A_i) > 0.
 \end{equation}
 
-\begin{mdframed}[frametitle=例：贝叶斯定理的应用]
+\begin{example}{贝叶斯定理的应用}{}
     新冠疫情期间我们经历了多次核酸检测。假设某核酸检测的的敏感度（一个携带病毒的人，检测结果为阳性的概率）为0.95，特异度（一个不携带病毒的人，检测结果为阴性的概率）为0.98。假设在某个社区中，感染率（携带病毒的人的比例）为0.01。如果某个人的检测结果为阳性，他确实感染了病毒的概率是多少？对此人进行复检，第二次检测结果仍然为阳性，那么他确实感染了病毒的概率又是多少？
-
+    \tcblower
     设事件A为“某人感染了病毒”，事件B为“某人检测结果为阳性”，则我们要求的是$P(A \mid B)$。根据贝叶斯定理，带入数据计算可得：
     \begin{equation}
         P(A \mid B) = \frac{0.95 \times 0.01}{0.95 \times 0.01 + (1 - 0.98) \times (1 - 0.01)} \approx 0.32
     \end{equation}
     复检计算方法类似，只是将先验概率更新为第一次检测的后验概率，即$P(A) = 0.32$，再次带入贝叶斯定理计算，可得概率约为0.96。
-\end{mdframed}
+\end{example}
 
 \paragraph{随机变量}
 
@@ -1342,7 +1502,7 @@ SVD的计算过程非常复杂：
 \end{description}
 
 具体如何估计，学界曾有争论，分为“频率学派”和“贝叶斯学派”。频率学派认为参数是固定的，数据是随机的；贝叶斯学派认为参数是随机的，数据是固定的。两种学派有不同的估计方法和理论基础，但在实际应用中，往往可以结合使用。相对应的，频率学派中最常用的参数估计方法是最大似然估计（MLE），而贝叶斯学派中最常用的参数估计方法是贝叶斯估计（MAP）。
-\begin{definition}[似然函数]
+\begin{definition}{似然函数}{}
     给定参数值，描述这样的数据出现的概率的函数称为似然函数。特别的，当数据独立同分布时，似然函数可以写成所有数据点的概率的乘积。由于每一个因子都是小于1的数，因此乘积会变得非常小，不易计算。为了解决这个问题，我们通常使用对数似然函数，即似然函数的自然对数，这样就将乘积转化为求和，简化了计算。
 \end{definition}
 
@@ -1351,7 +1511,7 @@ SVD的计算过程非常复杂：
     \item[贝叶斯估计] 结合先验概率和似然函数，使用贝叶斯定理计算后验概率，并选择使得后验概率最大的参数值作为估计值。也被称作“最大后验估计”，是贝叶斯学派中最常用的参数估计方法。
 \end{description}
 
-\begin{mdframed}[frametitle=练习：MLE与MAP估计]
+\begin{example}{练习：MLE与MAP估计}{}
     设某核酸检测的敏感度为0.95，特异性为1.00。假设在某个社区中，感染率为0.1。每一个人的检测结果都是独立的。某10人混管的检测结果为阳性，设该混管中感染者数量为$X$。
 
     计算：
@@ -1359,6 +1519,7 @@ SVD的计算过程非常复杂：
         \item 写出似然函数。做MLE估计。
         \item 写出后验概率，做MAP估计。（假设$X$遵从二项分布）
     \end{enumerate}
+    \tcblower
 
     这10个人不可能全是健康人。因此，对于$X=0$的情况，似然函数为0（即不可能发生）。
 
@@ -1369,15 +1530,16 @@ SVD的计算过程非常复杂：
     MAP估计：需要结合先验概率。先验概率为$P(X) = \binom{10}{X} 0.1^X 0.9^{10-X}$。后验概率为$P(X \mid B) \propto P(B \mid X) P(X)$，需要计算每个$X$值的后验概率，并选择使得后验概率最大的$X$值作为MAP估计。挨个计算，发现$X=1$的后验概率最大，因此MAP估计为$X=1$。
 
     这说明MLE估计在某些情况下很不合理，因为它没有考虑先验知识，而MAP估计则能够结合先验知识，得到更合理的结果。但MAP估计的缺点在于它依赖于先验分布的选择，具有一定的主观性，可能产生偏差。
-\end{mdframed}
+\end{example}
 
-\begin{mdframed}[frametitle=练习：连续情况下的MLE估计]
+\begin{example}{练习：连续情况下的MLE估计}{}
     设某连续随机变量$X$的概率密度函数为$f(x) = \frac{1}{\theta} e^{-x/\theta}$，其中$\theta > 0$是未知参数。
 
     \begin{enumerate}
         \item 证明：该PDF是一个合法的概率密度函数。
         \item 现在有一个样本数据集$\{x_1, x_2, \ldots, x_n\}$，其中每个$x_i$都是从上述分布中独立采样的。写出似然函数，并求出$\theta$的MLE估计。
     \end{enumerate}
+    \tcblower
 
     第一问需要验证非负性和归一化（0延拓）。应当非常容易验证。
 
@@ -1392,4 +1554,4 @@ SVD的计算过程非常复杂：
     对$\theta$求导并令其为0，得到：
     \begin{equation}\frac{d\ell}{d\theta} = -\frac{n}{\theta} + \frac{1}{\theta^2} \sum_{i=1}^n x_i = 0 \implies \hat{\theta} = \frac{1}{n} \sum_{i=1}^n x_i
     \end{equation}
-\end{mdframed}
+\end{example}

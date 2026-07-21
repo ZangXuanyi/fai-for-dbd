@@ -32,6 +32,7 @@
 \usepackage{graphicx}
 \graphicspath{{images/}}
 % \usepackage{subfigure}
+\usepackage[most]{tcolorbox} 
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}   % 使用较新版本语法
@@ -46,26 +47,97 @@
 \author{臧炫懿\and DeepSeek-V4-Pro}
 \date{\today}
 
-\theoremstyle{plain}
-\newtheorem{theorem}{定理}[section]
-\newtheorem{lemma}{引理}[theorem]
-\newtheorem{proposition}{命题}[section]
-\newtheorem{corollary}{推论}[theorem]
-
-\theoremstyle{definition}
-\newtheorem{example}{例}[section]
-\newtheorem{definition}{定义}[section]
-
-\theoremstyle{remark}
-\newtheorem*{remark}{注}
-\newtheorem*{note}{说明}
-\newtheorem{case}{情况}
-
 \addbibresource{references.bib}
 
 \renewcommand{\bibfont}{\footnotesize}
 
-% \defbibheading{chapterbib}[\refname]{%
-%   \section*{#1}%
-%   \addcontentsline{toc}{section}{#1}%
-% }
+\tcbset{
+  theorem-style/.style={
+    enhanced,
+    breakable,                 % 允许跨页
+    boxrule=0.4pt,             % 细边框，更素净
+    arc=3pt,                   % 圆角
+    left=6pt, right=6pt,
+    top=4pt, bottom=4pt,
+    fonttitle=\bfseries,       % 标题粗体
+    attach title to upper,     % 标题与内容在同一框中
+    after title={.\ },         % 标题后跟句点
+  },
+  note-style/.style={
+    enhanced,
+    breakable,
+    boxrule=0.4pt,
+    arc=3pt,
+    left=6pt, right=6pt,
+    top=4pt, bottom=4pt,
+    fonttitle=\bfseries,
+  }
+}
+
+\newtcbtheorem[number within=section]{theorem}{定理}{%
+  theorem-style,
+  colback=blue!5,              % 极淡蓝背景
+  colframe=blue!50!black,      % 深蓝边框
+  coltitle=blue!50!black,      % 深蓝标题文字
+}{thm}
+
+\newtcbtheorem[use counter from=theorem]{lemma}{引理}{%
+  theorem-style,
+  colback=green!5,
+  colframe=green!50!black,
+  coltitle=green!50!black,
+}{lm}
+
+\newtcbtheorem[number within=section]{proposition}{命题}{%
+  theorem-style,
+  colback=purple!5,
+  colframe=purple!50!black,
+  coltitle=purple!50!black,
+}{prop}
+
+\newtcbtheorem[use counter from=theorem]{corollary}{推论}{%
+  theorem-style,
+  colback=orange!5,
+  colframe=orange!50!black,
+  coltitle=orange!50!black,
+}{cor}
+
+\newtcbtheorem[number within=section]{definition}{定义}{%
+  theorem-style,
+  colback=red!5,
+  colframe=red!50!black,
+  coltitle=red!50!black,
+}{def}
+
+\newtcbtheorem[number within=section]{example}{例}{%
+  theorem-style,
+  colback=cyan!5,
+  colframe=cyan!50!black,
+  coltitle=cyan!50!black,
+}{ex}
+
+\newtcolorbox{intro}{
+  note-style,
+  colback=green!5,
+  colframe=green!50!black,
+  coltitle=white,
+  title={本章当中，你将学到},
+}
+
+\tcolorboxenvironment{proof}{
+blanker,breakable,left=5mm,
+before skip=10pt,after skip=10pt,
+borderline west={1mm}{0pt}{red}}
+
+
+\newtcolorbox{framed}[1]{
+  note-style,
+  colback=yellow!5,             
+  colframe=yellow!50!black,
+  coltitle=white,
+  title={#1}
+}
+
+\tcbset{myformula/.style={colback=yellow!10!white,colframe=red!50!black,
+every box/.style={highlight math style={colback=LightBlue!50!white,colframe=Navy}}
+}}

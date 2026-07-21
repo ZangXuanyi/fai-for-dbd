@@ -9,7 +9,7 @@
 \begin{document}
 \begin{tikzpicture}
     % 定义参数 a
-    \pgfmathsetmacro{\a}{1}
+    \pgfmathsetmacro{\a}{3}
 
     \begin{axis}[
             axis lines = middle,          % 坐标轴穿过原点
@@ -34,11 +34,6 @@
         % 2. 填充从 0 到 a 的积分区域（曲线与 x 轴之间）
         \addplot[fill=gray!30, draw=none, domain=0:\a]
         {sqrt(\a^2 - x^2)} \closedcycle;
-
-        % 3. 在阴影区添加积分表达式（可选）
-        \node[font=\small] at (axis cs:0.7*\a, 0.3*\a)
-        {$\displaystyle \int_0^a \sqrt{a^2-x^2}\,dx$};
-
     \end{axis}
 \end{tikzpicture}
 \end{document}

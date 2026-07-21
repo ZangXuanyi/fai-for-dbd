@@ -1,20 +1,20 @@
 \chapter{线性层}
 
-\begin{mdframed}[frametitle=本节你将学到：]
+\begin{intro}
     \begin{itemize}
         \item 线性层，及其参数学习方法，即梯度下降算法。
         \item 神经网络的训练方法：前向传播、反向传播。
         \item 模型的评估方法：损失函数、准确率、召回率、F1分数等。
         \item 模型的优化方法：优化器、正则化、归一化、残差连接等。
     \end{itemize}
-\end{mdframed}
+\end{intro}
 
 现代人工智能的本质，是\textbf{模拟生物神经元的连接方式，通过信息的传递来实现智能行为}，其基础是\textbf{机器学习}。而最能够反映这种“连接”的模型，就是“线性层”。
 
 \section{机器学习究竟做了个什么事情}
 
 机器学习大致是这样一个逻辑：
-\begin{definition}[机器学习]
+\begin{definition}{机器学习}{}
     给定数据$\{(x_i, y_i)\}_{i=1}^n$，寻找一个函数$f$，使得$f(x_i) \approx y_i$；且对于新的输入$x_{new}$，$f(x_{new})$能给出合理的预测。
 \end{definition}
 
@@ -33,11 +33,11 @@
 分类问题的核心自然是“分类”，即将数据划分为不同的类别，\textbf{这些类别之间是没有“顺序”意义的}。
 
 例如，朴素的MNIST-10分类问题：
-\begin{mdframed}[frametitle=MNIST-10分类问题]
+\begin{framed}{MNIST-10分类问题}
     给定一组手写数字图片。图片的尺寸都是$28\times 28$，每个像素点的灰度值在$[0, 255]$之间。我们希望训练一个模型，使其能够根据图片的像素值预测出图片中所表示的数字（0到9）。
 
-    这里的0到9是没有顺序意义的，仅表明其类别：我们完全可以给它用另一套方法标注，比如甲乙丙丁戊己庚辛壬癸之类。
-\end{mdframed}
+    这里的0到9是没有顺序意义的，仅表明其类别。
+\end{framed}
 
 初看起来这个问题颇难以下手。
 
@@ -75,7 +75,7 @@
 
 既然如此，我们完全可以把这个线的好坏用一个“指数”来衡量。我们知道，“好”是无上限的，但“坏”是有下限的，所以我们比起定义“这条线有多好”，更倾向于定义“这条线有多坏”。这个指数就是所谓的损失函数。
 
-\begin{definition}[损失函数]
+\begin{definition}{损失函数}{}
     损失函数是一个有下界的函数，用来衡量模型的预测结果与真实标签的差距。当预测结果和真实情况完全一致时，损失函数的数值一般为0；预测结果和真实情况差得越大，损失函数的数值也应该越大。
 \end{definition}
 
@@ -120,28 +120,28 @@
 
 \subsection{梯度下降为什么“基本上”是对的}
 
-观察 \cref{eq:gd} 和 \cref{eq:newton}，我们可以发现，梯度下降法实际上做了这件事：
+观察 \eqref{eq:gd} 和 \eqref{eq:newton}，我们可以发现，梯度下降法实际上做了这件事：
 \[ \eta \sim (\nabla^2 \mathcal{L}(\mathbf{W}_n, b_n))^{-1} \]
 
 所以“梯度下降一定能下降”这句话的一个必要条件是：Hessian矩阵是正定的。也就是说，损失函数必须是凸函数。
 
 损失函数不是凸函数的情况太多了。但我们一直在用这个梯度下降，也没见得有什么问题。为什么呢？我们可以试着找一找梯度下降的一个充分条件。事实上，这个定理成立。
-\begin{theorem}\label{thm:gd_convergence}
+\begin{theorem}{梯度下降的收敛性}{gd-convergence}
     若损失函数$f$是具有Lipschitz连续梯度的光滑函数，其梯度的Lipschitz常数是$L$，则在学习率$\eta$满足$0 < \eta < \frac{2}{L}$时，梯度下降法将收敛到一个局部最小值。
 \end{theorem}
 
 这个定理是整个机器学习的基础，接下来将给出这个定理的完整证明流程。数学基础薄弱的同学可以暂时跳过这个证明，不会影响后续理解。
-\begin{mdframed}[frametitle=\cref{thm:gd_convergence}的证明]
+\begin{proof}
     Lipschitz条件的定义是：
     \[ \forall x_1, x_2 \in I,\quad \exists L > 0, \quad |f(x_1) - f(x_2)| \leq L |x_1 - x_2| \]
     我们考量梯度，将这个式子改写为：
     \begin{equation}
-        \left\|\nabla f(\theta+\Delta \theta) - \nabla f(\theta)\right\| \leq L \|\Delta \theta\|
+        \left\|\nabla f(\theta+\Delta \ theta) - \nabla f(\theta)\right\| \leq L \|\Delta \theta\|
     \end{equation}
     这里取的范数是L2范数。
 
     先证明一个引理：
-    \begin{lemma}
+    \begin{lemma}{}{}
         若$f$是具有Lipschitz连续梯度的光滑函数，其梯度的Lipschitz常数是$L$，则下列不等式成立：
         \[
             f(\theta+\Delta \theta)- f(\theta) \leq  \left\langle\nabla f(\theta), \Delta \theta \right\rangle + \frac{L}{2}\|\Delta \theta\|^2
@@ -169,7 +169,7 @@
         &= \left\langle\nabla f(\theta), \Delta \theta \right\rangle + \frac{L}{2}\|\Delta \theta\|^2
     \end{align}
 
-    \cref{eq:bilinear}这一步利用的是内积的双线性；\cref{eq:cauchy-schwarz}这一步利用的是Cauchy-Schwarz不等式。于是我们证明了这个引理。
+    \eqref{eq:bilinear}这一步利用的是内积的双线性；\eqref{eq:cauchy-schwarz}这一步利用的是Cauchy-Schwarz不等式。于是我们证明了这个引理。
 
     因为$f(\theta)$是损失函数，目标是最小化这个东西。既然是最小化，那么每一步都希望下降，即$f(\theta+\Delta \theta)- f(\theta) < 0$。利用放缩，希望$\left\langle\nabla f(\theta), \Delta \theta \right\rangle + \frac{L}{2}\|\Delta \theta\|^2 < 0$。但这是一个平方加上另一项，所以想要保证整体小于零，必须有$\left\langle\nabla f(\theta), \Delta \theta \right\rangle<0$，一个自然的选择是
     \[\Delta \theta = -\eta \nabla f(\theta)\]
@@ -178,24 +178,23 @@
     把梯度下降公式带入上式，即
     \[ \left(\frac{L}{2}\eta^2 - \eta\right)\|\nabla f(\theta)\|^2 < 0 \]
     解这个不等式发现$\eta$必须满足$0 < \eta < \frac{2}{L}$。于是我们证明了这个定理。
+\end{proof}
 
-    上述的推导过程比我们上节基于牛顿优化法的推导要严格得多：我们上节课是“凭感觉知道海森矩阵的逆应当是正的”，所以直接把它丢掉，变成了一个常数；而这次我们是从李普希茨约束出发，严格地推导出了这个常数的上界。
+上述的推导过程比我们上节基于牛顿优化法的推导要严格得多：一开始是“凭感觉知道海森矩阵的逆应当是正的”，所以直接把它丢掉，变成了一个常数；而这次我们是从李普希茨约束出发，严格地推导出了这个常数的上界。
 
-\end{mdframed}
-
-\cref{thm:gd_convergence}这个定理证明完成之后，我们的问题就变成：损失函数到底是不是具有Lipschitz连续梯度的光滑函数？实际上，这个假设通常都是不成立的；但在实际情况中，能真正训练成功的模型，大多都能保证损失函数的梯度整体上是很稳定的。\cite{kexuefm-6992}
+\nameref{thm:gd-convergence}这个定理证明完成之后，我们的问题就变成：损失函数到底是不是具有Lipschitz连续梯度的光滑函数？实际上，这个假设通常都是不成立的；但在实际情况中，能真正训练成功的模型，大多都能保证损失函数的梯度整体上是很稳定的。\cite{kexuefm-6992}
 
 有的读者可能会考虑为什么我们不在这里考虑“收敛到鞍点”的问题。实际上，若定义严格鞍点：
-\begin{definition}[严格鞍点]
+\begin{definition}{严格鞍点}{}
     若$f$是一个光滑函数，$\theta^*$是$f$的一个临界点（即$\nabla f(\theta^*) = 0$），且Hessian矩阵$\nabla^2 f(\theta^*)$有至少一个负特征值，则称$\theta^*$是$f$的一个严格鞍点。
 \end{definition}
 和严格鞍点性质：
-\begin{definition}[严格鞍点性质]
+\begin{definition}{严格鞍点性质}{}
     如果一个函数的所有临界点（$\nabla f(\theta) = 0$）要么是局部最小值，要么是严格鞍点，则称$f$具有严格鞍点性质。机器学习中的损失函数大多具有该性质。
 \end{definition}
 
 则下列定理成立：
-\begin{theorem}[中心稳定流形定理]
+\begin{theorem}{中心稳定流形定理}{}
     若$f$是一个光滑函数，$\theta^*$是$f$的一个严格鞍点，则存在一个局部坐标系，使得在该坐标系下，$\theta^*$附近的点可以分为三类：
     \begin{enumerate}
         \item 收敛到$\theta^*$的点；
@@ -206,35 +205,27 @@
 \end{theorem}
 
 该定理有两个重要的推论：
-\begin{corollary}
+\begin{corollary}{}{}
     从随机初始点出发，梯度下降几乎必然不会收敛到严格鞍点\cite{lee2016gradientdescentconvergesminimizers}。
-\end{corollary}
+\end{corollary}{}{}
 
-\begin{corollary}
+\begin{corollary}{}{}
     那些会导致算法收敛到严格鞍点的初始点，其集合的Lebesgue测度为零\cite{panageas2016gradientdescentconvergesminimizers}。
-\end{corollary}
+\end{corollary}{}{}
 证明这两个推论的论文名称很有意思，前面那一篇叫做\textsc{Gradient Descent Converges to Minimizers}，另一篇叫做\textsc{Gradient Descent Only Converges to Minimizers}。这两个推论保证了一件事：我们不需要考虑鞍点的问题，可以放心地使用梯度下降法。
 
 唯一的问题是，在高维空间中，鞍点比局部最小值更常见，而在鞍点附近，朴素的梯度下降可能会需要指数长的时间才能逃离，这会极大拖慢训练速度\cite{schaeffer2019extendingstepsizerestrictiongradient}。换句话说，这些推论只能保证长期上梯度下降成立，却不能保证效率。
 
-\begin{mdframed}[frametitle=例子：梯度下降法在鞍点附近的行为]
+\begin{example}{梯度下降在鞍点附近的行为}{}
     设损失函数$f(x) = x^3$，则$f'(x) = 3x^2$，$f''(x) = 6x$。我们可以看到，在$x=0$处，$f'(0) = 0$，且$f''(0) = 0$，所以$x=0$是一个鞍点。
 
     我们可以用梯度下降法来观察它的行为，看看多久才能逃离。假设学习率$\eta = 0.1$，初始点$x_0 = 0.01$。那么我们有：
     \begin{equation}
         x_{n+1} = x_n - \eta f'(x_n) = x_n - 0.1 \cdot 3x_n^2 = x_n(1 - 0.3x_n)
     \end{equation}
-    所以应当能够近似出这样的表\cref{tab:gd_saddle}。
-
-    而利用牛顿法，其迭代公式为：
-    \begin{equation}
-        x_{n+1} = x_n - \frac{f'(x_n)}{f''(x_n)} = x_n - \frac{3x_n^2}{6x_n} = \frac{x_n}{2}
-    \end{equation}
-    此时的收敛速度是指数级的，2步就走完了梯度下降1000步的路程。
-\end{mdframed}
-
-\begin{table}
-    \centering
+    所以应当能够近似出这样的表。
+    
+    \begin{center}
     \begin{tabular}{c|cccccccc}
         \toprule
         $n$ & 0 & 1 & 5 & 10 & 50 & 100 & 500 & 1000 \\
@@ -242,25 +233,32 @@
         $x_n$ & 0.01 & 9.97e-4 & 9.85e-4 & 9.70e-4 & 8.69e-4 & 7.68e-4 & 3.99e-4 & 2.49e-4 \\
         \bottomrule
     \end{tabular}
-    \caption{梯度下降法在$f(x) = x^3$的鞍点附近的行为}
-    \label{tab:gd_saddle}
-\end{table}
+    \end{center}
 
-为了加速逃离鞍点的过程，优化器（\cref{sec:optimizer}）就派上了用场。
+    而利用牛顿法，其迭代公式为：
+    \begin{equation}
+        x_{n+1} = x_n - \frac{f'(x_n)}{f''(x_n)} = x_n - \frac{3x_n^2}{6x_n} = \frac{x_n}{2}
+    \end{equation}
+    此时的收敛速度是指数级的，2步就走完了梯度下降1000步的路程。
+\end{example}
+
+为了加速逃离鞍点的过程，优化器就派上了用场，见\nameref{sec:optimizer}。
 
 \subsection{利用链式法则简化梯度计算流程}
 
-回看 \cref{eq:gd}，我们发现梯度下降法的核心是计算梯度$\nabla \mathcal{L}(\mathbf{W}_n, b_n)$。那么如何计算这个梯度呢？
+回看 \eqref{eq:gd}，我们发现梯度下降法的核心是计算梯度$\nabla \mathcal{L}(\mathbf{W}_n, b_n)$。那么如何计算这个梯度呢？
 
 直接计算似有困难，但我们可以利用链式法则来计算梯度。链式法则告诉我们，如果一个函数是由多个函数复合而成的，那么它的导数可以通过这些函数的导数相乘来计算。这个定理在张量映射中同样成立。我们将以一个实例说明。
 
-\begin{mdframed}[frametitle=例子：手算一个机器学习]
+\begin{example}{链式法则的应用}{}
 
     假设损失函数$\mathcal{L} = (\hat{y} - y)^2$，神经网络为单层二维线性分类器$f(\mathbf{x}) = \mathbf{W}^\top \mathbf{x} + b$叠加一个sigmoid输出层$\hat{y} = \sigma(f(\mathbf{x}))$，其中$\sigma(z) = 1/(1 + e^{-z})$。这里叠加一个sigmoid输出层的主要原因是：将输出数值保序地映射到0和1之间，使得输出数值可以被解释为概率。
 
     具体数值：$\mathbf{x}_\text{in} = [2, 3]^\top$，$y = 1$，$\mathbf{W} = [1, 2]^\top$，$b = 3$。学习率$\eta = 0.1$。
 
     希望算出$\mathbf{x}_\text{out}$、$\hat{y}$、$\mathcal{L}$、经过一次迭代后的$\mathbf{W}$和$b$的值。
+
+    \tcblower
 
     为此，先进行一次前向传播：
     \[f(\mathbf{x}_\text{in}) = \mathbf{W}^\top \mathbf{x}_\text{in} + b = [1, 2] \times [2, 3]^\top + 3 = 1 \cdot 2 + 2 \cdot 3 + 3 = 11\]
@@ -277,7 +275,7 @@
     \[\frac{\partial \mathcal{L}}{\partial b} = \frac{\partial \mathcal{L}}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial f} \cdot \frac{\partial f}{\partial b} = -0.000034 \cdot 0.000017 \cdot 1 = -0.000000578\]
     \[\mathbf{W}_\text{new} = \mathbf{W} - \eta \cdot \frac{\partial \mathcal{L}}{\partial \mathbf{W}}  = [1.0000001156, 2.0000001734]^\top\]
     \[b_\text{new} = b - \eta \cdot \frac{\partial \mathcal{L}}{\partial b} = 3 - 0.1 \cdot (-0.000000578) = 3.0000000578\]
-\end{mdframed}
+\end{example}
 
 \subsection{数据集、测试集、验证集}
 
@@ -293,7 +291,9 @@
 
 传统的机器学习认为，在训练模型的时候，我们不能把测试集和验证集混淆到数据集中训练，否则模型将会“见过”这些数据，对其进行拟合，导致验证模型的最终性能时出现偏差；另外，也不能没有测试集而完全使用验证集来测试模型的最终能力，因为这可能会导致“人为的过拟合”问题（董豪老师语），即我们在验证集上调参，导致模型在验证集上表现很好，但在实际结果上表现不佳。这套划分方式直到现在依然有着指导意义，在绝大多数情况下都要遵循。
 
-但现代的大模型训练领域往往不再遵循这套划分方式。主要原因有二：其一，现代大模型训练所用到的数据是如此之多，以至于它就算对这些数据过拟合，也不会对实际结果产生太大影响；其二，现代大模型训练需要的资源是极多的，以至于它不可能在训练过程中对验证集进行频繁的评估。所以这些时候往往只有训练集和测试集（甚至有时候连测试集都没有）。
+\begin{framed}{}
+现代的大模型训练领域往往不再遵循这套划分方式。主要原因有二：其一，现代大模型训练所用到的数据是如此之多，以至于它就算对这些数据过拟合，也不会对实际结果产生太大影响；其二，现代大模型训练需要的资源是极多的，以至于它不可能在训练过程中对验证集进行频繁的评估。所以这些时候往往只有训练集和测试集（甚至有时候连测试集都没有）。
+\end{framed}
 
 \subsection{欠拟合、过拟合及其解决方法}
 
@@ -369,7 +369,7 @@ L1正则化和L2正则化的区别也可由图解\cref{fig:regularization}来说
     \item[F1分数] 是精确率和召回率的调和平均数。
 \end{description}
 
-\begin{mdframed}[frametitle=例子：HIV检测的精确率和召回率]
+\begin{example}{HIV检测的精确率和召回率}{}
 
     为了防控艾滋病，很多人提出“国家应当对艾滋病进行全面普查”，以便及时发现感染者并进行隔离治疗。那么我们构思以下模型：存在一个艾滋病检测手段准确率为99.9\%，即如果一个人感染了HIV，则有99.9\%的概率报告“阳性”，剩下0.1\%即“未检出”；如果一个人没有感染HIV，则有99.9\%的概率报告“阴性”，剩下0.1\%即“假阳性”。
 
@@ -385,7 +385,7 @@ L1正则化和L2正则化的区别也可由图解\cref{fig:regularization}来说
     现实很好反映了这一点：根据FDA等权威机构的数据，HIV快速检测的灵敏度（召回率）超过99\%，特异性（真阴性率）接近99.9\%；但以美国2019-2024年对2190万次检测的真实世界研究为例，特异性达到99.86\%，精确率68.4\%\cite{zhu-real-world-2026}，所以这就是为什么HIV检测不推荐对普通人群进行普查，而是采用风险分层筛查策略。
 
     但这不能说明我们的检测手段是不好的。实际上在医院中，该手段必然是辅助检测艾滋病的重要手段，因为召回率非常高，且医生几乎只会对高风险人群进行检测，这些高风险人群的感染率不可能低：假如某高危人群的感染率大致在10\%左右，那么10000人中就有1000人感染了HIV，那么在被报告为阳性的$999+9 = 1008$人中，真正感染者的比例就达到了99.1\%，精确率就非常高了。
-\end{mdframed}
+\end{example}
 
 这个例子也很好地说明了：\textbf{不同的应用场景需要不同的指标来衡量模型的性能}，我们不能简单地说一个模型好坏，而是要看它在特定场景下的表现。
 
@@ -419,7 +419,7 @@ L1正则化和L2正则化的区别也可由图解\cref{fig:regularization}来说
 \[ L({y}, \hat{y}) = -\sum_{i=1}^{C} y_i \log(\hat{y}_i) \]
 其中 $C$ 是类别数，$y_i$ 是真实类别的独热编码（one-hot encoding），$\hat{y}_i$ 是预测类别的概率。通过最小化这个损失函数，我们可以优化模型的分类性能。
 
-\begin{mdframed}[frametitle=信息熵与交叉熵]
+\begin{framed}{}
 
     所谓“信息熵”，是指一个随机变量的不确定性。
 
@@ -435,15 +435,19 @@ L1正则化和L2正则化的区别也可由图解\cref{fig:regularization}来说
     \[ H(P, Q) = -\sum_{x \in X} P(x) \log Q(x) \]
     在机器学习中，交叉熵常用于分类问题的损失函数，衡量模型预测的概率分布与真实标签的差异。
 
-\end{mdframed}
+\end{framed}
 
 接踵而至的是两个值得深思的问题。
 
-第一个问题是：怎样将这个十维的向量映射到一个概率分布上？也就是说，如何将每个类别的得分转换为一个概率值，使得所有类别的概率和为1？这可以通过Softmax函数来实现：
+第一个问题是：怎样将这个十维的向量映射到一个概率分布上？也就是说，如何将每个类别的得分转换为一个概率值，使得所有类别的概率和为1？
+
+这可以通过Softmax函数来实现：
 \[ \text{Softmax}(z_i) = \frac{e^{z_i}}{\sum_{j=1}^{C} e^{z_j}} \]
 Softmax函数将每个类别的得分 $z_i$ 转换为一个概率值 $\hat{y}_i$，并且保证所有类别的概率和为1。这样，我们就可以将模型的输出解释为每个类别的预测概率，从而进行多分类任务。
 
-第二个问题是：为什么在多分类问题中，我们就不得不使用高维度向量来表示每个类别的得分，而不是像二分类问题中那样使用一个标量？首先，多分类问题的本质是一个“分类问题”，这里的0到9虽然是数字，但仅代表类别，不具有顺序意义，所以我们需要为不同的类分配不同的维度，仅用一个标量去拟合，那是把分类问题做成了回归问题，丢失了类别之间的独立性和互斥性。其次，在二分类问题中使用一个标量是单纯的省事：对于标量$x$，实际唯一对应了向量$[x, 1-x]$，没有丢失任何信息；但在多分类问题中，使用一个标量$x$什么都对应不了。
+第二个问题是：为什么在多分类问题中，我们就不得不使用高维度向量来表示每个类别的得分，而不是像二分类问题中那样使用一个标量？
+
+首先，多分类问题的本质是一个“分类问题”，这里的0到9虽然是数字，但仅代表类别，不具有顺序意义，所以我们需要为不同的类分配不同的维度，仅用一个标量去拟合，那是把分类问题做成了回归问题，丢失了类别之间的独立性和互斥性。其次，在二分类问题中使用一个标量是单纯的省事：对于标量$x$，实际唯一对应了向量$[x, 1-x]$，没有丢失任何信息；但在多分类问题中，使用一个标量$x$什么都对应不了。
 
 \subsection{小结：机器学习的核心过程}
 
@@ -487,12 +491,17 @@ Softmax函数将每个类别的得分 $z_i$ 转换为一个概率值 $\hat{y}_i$
 \[ \mathcal{L} = \sum_{i=1}^{N} (\mathbf{W}^\top \mathbf{x}_i + b - y_i)^2 \]
 若对$\mathbf{W}$求偏导数：
 \[ \frac{\partial \mathcal{L}}{\partial \mathbf{W}} = 2 \sum_{i=1}^{N} (\mathbf{W}^\top \mathbf{x}_i + b - y_i) \mathbf{x}_i \]
-令这个偏导数等于零矩阵，我们可以求出结果：
-\[ \mathbf{W} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y} \]
-其中$\mathbf{X}$是一个$N \times d$的矩阵，$\mathbf{y}$是一个$N \times 1$的向量，$d$是特征的维度。这个公式就是高维空间中最小二乘法的解析解。类似的，可以求出$b$的解析解：
-\[ b = \frac{1}{N} \sum_{i=1}^{N} (y_i - \mathbf{W}^\top \mathbf{x}_i) \]
+令这个偏导数等于零矩阵，我们可以求出结果。类似的，可以求出$b$的解析解。
 
-但是这个解析解在实际应用中并不常用，它强制要求了协方差矩阵$\mathbf{X}^\top \mathbf{X}$是可逆的。我们知道，协方差矩阵未必满秩，不满秩的矩阵不可逆。不满秩的时候解不唯一，可以使用伪逆$(\mathbf{X}^\top \mathbf{X})^+$来求解，对应的几何意义是：在所有能让损失函数 $\mathcal{L}$ 达到最小值的无数个 $\mathbf{W}$ 中模长（范数）最小的那一个；但伪逆需要做奇异值分解，计算复杂度为$O(d^3)$，当特征维度$d$很大时，计算量会非常大；另外，最小范数解会把权重均匀地分摊到所有相关的特征上，这容易导致过拟合。
+\begin{theorem}{线性回归的解析解}{}
+\begin{align}
+    \mathbf{W} &= (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y} \\
+    b &= \frac{1}{N} \sum_{i=1}^{N} (y_i - \mathbf{W}^\top \mathbf{x}_i)
+\end{align}
+其中$\mathbf{X}$是一个$N \times d$的矩阵，$\mathbf{y}$是一个$N \times 1$的向量，$d$是特征的维度。
+\end{theorem}
+
+但是这个解析解在实际应用中并不常用，它强制要求了协方差矩阵$\mathbf{X}^\top \mathbf{X}$是可逆的。我们知道，协方差矩阵未必满秩，不满秩的矩阵不可逆。不满秩的时候解不唯一，可以使用伪逆$(\mathbf{X}^\top \mathbf{X})^+$来求解，对应的几何意义是：在所有能让损失函数 $\mathcal{L}$ 达到最小值的许多个 $\mathbf{W}$ 中模长（范数）最小的那一个；但伪逆需要做奇异值分解，计算复杂度为$O(d^3)$，当特征维度$d$很大时，计算量会非常大；另外，最小范数解会把权重均匀地分摊到所有相关的特征上，这容易导致过拟合。
 
 所以我们还得搬出梯度下降法来求解这个问题。我们可以使用梯度下降法来迭代更新权重向量$\mathbf{W}$和偏置标量$b$，直到损失函数收敛到一个较小的值。具体的操作方法，和我们在分类问题中使用梯度下降法的操作方法是类似的：计算损失函数的梯度，然后沿着梯度下降的方向更新参数。通过不断迭代，我们可以找到一个较优的超平面，使得模型对数据的拟合效果较好。
 
@@ -500,18 +509,21 @@ Softmax函数将每个类别的得分 $z_i$ 转换为一个概率值 $\hat{y}_i$
 
 \subsection{岭回归和套索回归}
 
-伪逆既然效果不好、容易过拟合，我们能不能从之前分类器的经验中借鉴一些方法来解决这个问题呢？比如把损失函数变为这样：
+我们能不能从之前分类器的经验中借鉴一些方法来解决这个问题呢？比如把损失函数变为这样：
 \[ \mathcal{L} = \sum_{i=1}^{N} (\mathbf{W}^\top \mathbf{x}_i + b - y_i)^2 + \lambda \left|\mathbf{W}\right|_2^2 \]
 这不就是在损失函数的基础上加了一个权重向量的L2范数吗？我们现在来解一下这个东西。对$\mathbf{W}$求偏导数：
 \[ \frac{\partial \mathcal{L}}{\partial \mathbf{W}} = 2 \sum_{i=1}^{N} (\mathbf{W}^\top \mathbf{x}_i + b - y_i) \mathbf{x}_i + 2\lambda \mathbf{W} \]
 令这个偏导数等于零矩阵，我们可以求出结果：
+
+\begin{theorem}{岭回归的解析解}{}
 \[ \mathbf{W} = (\mathbf{X}^\top \mathbf{X} + \lambda \mathbf{I})^{-1} \mathbf{X}^\top \mathbf{y} \]
 其中$\mathbf{I}$是一个单位矩阵。
+\end{theorem}
 
-断言：下列命题成立。
-\begin{proposition}
+现在，只要下面这个命题成立，那么我们就可以保证岭回归的解析解是存在的。
+\begin{proposition}{}{}
     对于任何n维行向量$\mathbf{X}$和任何$\lambda > 0$，$\mathbf{X}^\top \mathbf{X} + \lambda \mathbf{I}_n$必然可逆。
-\end{proposition}
+\end{proposition}{}{}
 
 \begin{proof}
     考虑正定性。对于任意非零向量$\mathbf{v} \in \mathbb{R}^n$，我们有：
@@ -531,9 +543,7 @@ Softmax函数将每个类别的得分 $z_i$ 转换为一个概率值 $\hat{y}_i$
 
 我们用类似的手段分析一下，对$\mathbf{W}$求偏导数：
 \[ \frac{\partial \mathcal{L}}{\partial \mathbf{W}} = 2 \sum_{i=1}^{N} (\mathbf{W}^\top \mathbf{x}_i + b - y_i) \mathbf{x}_i + \lambda \text{sign}(\mathbf{W}) \]
-其中$\text{sign}(\mathbf{W})$是一个向量，其每个元素是$\mathbf{W}$对应元素的符号：正为$1$，负为$-1$，其他情况为$0$。这里是人为规定了$f(x) = |x|$时，$f'(0) = 0$，并不代表$f(x)=|x|$在$x=0$处光滑！
-
-我们可以看到，套索回归的偏导数中包含了一个非线性项$\text{sign}(\mathbf{W})$，这使得套索回归的解析解变得更加复杂，这是一个复杂的凸优化问题。
+其中$\text{sign}(\mathbf{W})$是一个向量，其每个元素是$\mathbf{W}$对应元素的符号：正为$1$，负为$-1$，其他情况为$0$。这里是人为规定了$f(x) = |x|$时，$f'(0) = 0$，但$f(x)=|x|$在$x=0$处不光滑！这使得套索回归的解析解变得更加复杂，这是一个复杂的凸优化问题。
 
 分析表明，套索回归没有像岭回归一样给出一个完美的解（即仍然可能存在多个解）；所以我们依然习惯使用梯度下降来求解套索回归问题。但套索回归也有自己的好处：由于L1范数对小数值的惩罚比L2范数更大，所以套索回归倾向于产生稀疏的解，即许多权重会被压缩为零，从而实现特征选择。这样一来，套索回归就同时完成了两件事：防止过拟合、自动筛选重要特征。最终的模型只保留少数关键特征，不仅预测快，而且解释性更强——可以直接说“最终结果主要和这几个因素有关”。
 
@@ -588,17 +598,16 @@ Softmax函数将每个类别的得分 $z_i$ 转换为一个概率值 $\hat{y}_i$
 
 \subsection{归一化：让数据分布更好}
 
-\begin{mdframed}[frametitle=例子：不同分布的数据对模型训练的影响]
+\begin{example}{不同分布的数据对训练流程的影响}{}
     现在有一个神经网络（简单线性层，不放输出层）：$\hat{y} = \mathbf{W}^\top \mathbf{x} + b$，其中$\mathbf{W}, \mathbf{x} \in \mathbb{R}^{4}$，$b \in \mathbb{R}$。损失函数：$\mathcal{L} = \frac{1}{2}(\hat{y} - y)^2$，其中$y \in \mathbb{R}$是标签。
 
     初始情况下，$\mathbf{W} = [1, 1, 1, 1]^\top$，$b = 0$。
 
     \begin{itemize}
-        \item 现在输入是：$\mathbf{x} = [1, 2.5, -0.5, -1]^\top$，$y = 8$，一次迭代的结果是$[1.006,1.015,0.997,0.994]^\top$。
-        \item 现在输入是：$\mathbf{x} = [100, 250, -50, -100]^\top$，$y = 800$，一次迭代的结果是$[61,151,-29,-59]^\top$。
+        \item 若输入是：$\mathbf{x} = [1, 2.5, -0.5, -1]^\top$，$y = 8$，一次迭代的结果是$[1.006,1.015,0.997,0.994]^\top$。
+        \item 若输入是：$\mathbf{x} = [100, 250, -50, -100]^\top$，$y = 800$，一次迭代的结果是$[61,151,-29,-59]^\top$。
     \end{itemize}
-
-\end{mdframed}
+\end{example}
 
 我们发现，例子中第二个输入是所有特征同时放大了100倍，标签也放大了100倍。从数学上看，这两个问题其实是同一个线性问题（因为 $y$ 和 $\mathbf{x}$ 同步缩放），但在训练过程中，第二个问题的梯度会变得非常大，导致参数更新过快，可能会出现震荡甚至发散的情况。这被称作“梯度爆炸”问题。
 
@@ -619,14 +628,14 @@ Softmax函数将每个类别的得分 $z_i$ 转换为一个概率值 $\hat{y}_i$
             \mathbf{Y}_i &= \gamma \hat{\mathbf{X}}_i + \beta
         \end{align}
 \end{description}
-\cref{eq:bn_forward_3}中的$\epsilon$是一个很小的正数，防止分母为0；$\gamma$和$\beta$是可学习的参数，用于恢复数据的尺度和偏移。
+\eqref{eq:bn_forward_3}中的$\epsilon$是一个很小的正数，防止分母为0；$\gamma$和$\beta$是可学习的参数，用于恢复数据的尺度和偏移。
 
-\begin{figure}
-    \centering
-    \includestandalone[width=0.8\textwidth]{gaussian-distribution}
-    \caption{标准高斯分布$\mathcal{N}(0, 1)$，均值为0，方差为1。若令$(x-\mu)/sigma \to x$，则可以将任意高斯分布$\mathcal{N}(\mu, \sigma^2)$映射到标准高斯分布$\mathcal{N}(0, 1)$。}
-    \label{fig:normalization}
-\end{figure}
+% \begin{figure}
+%     \centering
+%     \includestandalone[width=0.8\textwidth]{gaussian-distribution}
+%     \caption{标准高斯分布$\mathcal{N}(0, 1)$，均值为0，方差为1。若令$(x-\mu)/sigma \to x$，则可以将任意高斯分布$\mathcal{N}(\mu, \sigma^2)$映射到标准高斯分布$\mathcal{N}(0, 1)$。}
+%     \label{fig:normalization}
+% \end{figure}
 
 Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易理解。我们知道，对于多数数据而言，他们的分布是近似正态分布的，因此将其映射到标准正态分布是合理的；这样有益于将每一层的输入分布都归一化到标准正态分布上，减少了所谓的内部协变量偏移，从而稳定乃至加速了训练\cite{ioffe2015batchnormalizationacceleratingdeep}。该假说被称作“ICS假说”。
 
@@ -647,16 +656,19 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
 \end{itemize}
 结果说明，分布稳定性与训练性能之间，没有直接因果关系\cite{santurkar2019doesbatchnormalizationhelp}！论文的作者又做了些其余的试验，所有结果全都指向同一结论：\textbf{批量归一化的成功与 ICS 无关}。既然 ICS 假说不成立，那么批量归一化的成功究竟是为什么呢？
 
-实际上，以下两个结论成立：
+实际上，以下两个结论成立。
+
+\begin{theorem}{批量归一化的成功原因}{}
 \begin{itemize}
     \item 中心化能够显著降低李普希茨常数，从而加速训练。
     \item 缩放，不一定能降低李普希茨常数。但是这东西有类似学习率自适应的作用，使得每一层的更新更同步，减少了在某一个特定的层上过拟合的可能性，能提升模型的泛化能力\cite{kexuefm-6992}。
 \end{itemize}
+\end{theorem}
 
 接下来将严格的证明过程放在这里，感兴趣的读者可以自行阅读。
-\begin{mdframed}[frametitle=严格的论述过程]
+\begin{proof}
 
-    我们刚才得到了重要定理：如果$0<\eta<\frac{2}{L}$，那么梯度下降一定会使损失函数下降（\cref{thm:gd_convergence}）。为了做到这一点，要么让$\eta$变小，要么就让$L$足够小。但是前者变小意味着学习速度变慢，所以更理想的情况是后者，只要降低了李普希茨常数$L$，就可以使用更大的学习率，从而加速训练。
+    我们刚才得到了重要定理：如果$0<\eta<\frac{2}{L}$，那么梯度下降一定会使损失函数下降（\nameref{thm:gd_convergence}）。为了做到这一点，要么让$\eta$变小，要么就让$L$足够小。但是前者变小意味着学习速度变慢，所以更理想的情况是后者，只要降低了李普希茨常数$L$，就可以使用更大的学习率，从而加速训练。
 
     但$L$是什么呢？它是损失函数$f$的一个性质，和$f$的输入分布无关，所以只能通过调整$f$来降低$L$。
 
@@ -699,7 +711,7 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
         \item 损失函数连同输出层的激活函数一起考虑时，其导数的绝对值被一个常数$N$所限制。
     \end{itemize}
 
-    在\cref{eq:grad_b}中，我们看到$\frac{\partial \mathcal{L}_{w, b}}{\partial g}$和$g'(\left\langle w, x \right\rangle + b)$分别被$N$和$M$所限制，其梯度平稳。
+    在\eqref{eq:grad_b}中，我们看到$\frac{\partial \mathcal{L}_{w, b}}{\partial g}$和$g'(\left\langle w, x \right\rangle + b)$分别被$N$和$M$所限制，其梯度平稳。
 
     于是现在该考虑$w$的梯度：和这个不一样，其梯度和$x$有关。
 
@@ -749,13 +761,16 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
 
     所以\textbf{批量归一化的第二步：缩放，不一定能降低李普希茨常数。但是这东西有类似学习率自适应的作用，使得每一层的更新更同步，减少了在某一个特定的层上过拟合的可能性，能提升模型的泛化能力}。
 
-\end{mdframed}
+\end{proof}
 
 这个分析过程带来的另两个结论是：
+\begin{corollary}{}{}
 \begin{itemize}
     \item 批量归一化要放在线性层（或卷积层）的前面，因为它是对输入进行变换的。
     \item 批量归一化不能避免的是batch size要大些（因为希望$\mu$和$\sigma$的估计更准确），在小batch的情况下，效果会大打折扣，对算力提出了要求。
 \end{itemize}
+\end{corollary}
+
 为了解决批量归一化算得慢的问题，才有了层归一化等其他归一化方法的出现。但单论效果而言，批归一化的效果还是一骑绝尘的。
 
 如果我们把这里的batch换成单个样本，那么就得到了层归一化（Layer Normalization）\cite{ba2016layernormalization}。其计算公式如下：
@@ -768,7 +783,7 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
 
 这是对这个\textbf{输入向量本身}进行归一化。它的效果也不错，尤其是在小batch size的情况下，而且算得快，多用于一些算力比较紧张的场景，例如移动端的模型，或在线计算的模型。所谓“在线计算”者，指的是需要即时性的算法（尤其是那种不能等整个batch都准备好了才能进行计算的算法），例如强化学习中的一些算法，或一些需要实时响应的算法。
 
-可以说，归一化虽然很早就被用于神经网络的训练，但它得到解释已经是很久以后的事情了。这种实践先于理论的现象，在科研中非常常见。
+可以说，归一化虽然很早就被用于神经网络的训练，但它得到解释已经是很久以后的事情了。这种实践先于理论的现象，在科研中非常常见。这给了我们一个启示：做科研时，往往不能强求每一步都能够给出一个完美的解释，人工智能这种实践的科学尤其如此。
 
 \subsection{残差连接：让网络更深}
 
@@ -826,7 +841,7 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
 
 回想一下我们之前反复进行的操作：给定输入，经过一系列映射最终得到预测值，然后计算损失，再将损失的梯度一层一层地传回去，更新所有可学习的参数。这一整套流程其实可以看作一个巨大的复合函数。如果我们把每一个基本运算（矩阵乘法、加法、激活函数、求和、取对数……）看作一个节点，把数据在节点之间的流动看作有向边，就得到了一张有向无环图。图中的每个节点对应一个\textbf{操作}，它接收若干输入张量，产生若干输出张量；边则表示“输出–输入”的依赖关系。
 
-\begin{definition}[计算图]
+\begin{definition}{计算图}{}
     一个计算图是一个有向无环图 $G=(V,E)$，其中每个节点 $v\in V$ 代表一个数学运算（例如加法、乘法、ReLU、Softmax 等）；边 $e=(u\to v)\in E$ 表示节点 $v$ 的运算以节点 $u$ 的输出作为输入。
 \end{definition}
 
@@ -859,7 +874,7 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
 
 梯度下降法需要获得损失对每个可学习参数的梯度。在计算图框架下，反向传播的思想是：对每一个节点，只要我们知道“输出相对于该节点的梯度”（上游梯度），以及该节点自身运算的\textbf{局部梯度}，就可以利用链式法则计算出该节点输入端的梯度，并继续向更早的节点传播。
 
-仍以图\ref{fig:simple_computation_graph}为例：
+仍以图\cref{fig:simple_computation_graph}为例：
 \begin{itemize}
     \item 节点 $(\cdot)^2$：输入 $d=14$，输出 $\mathcal{L} = d^2$。局部梯度为 $\frac{\partial \mathcal{L}}{\partial d} = 2d = 28$。上游梯度（来自损失自身关于损失的导数）为 $1$，所以传给 $d$ 的梯度为 $1 \times 28 = 28$。
     \item 节点 $\times$：输入为 $c=7$ 和常数 $2$，输出 $d = c \times 2$。局部梯度分别为 $\frac{\partial d}{\partial c}=2$，$\frac{\partial d}{\partial 2}=c=7$。上游梯度为 $28$，因此传给 $c$ 的梯度为 $28 \times 2 = 56$；常数不需要梯度。
@@ -873,7 +888,7 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
 \]
 其中 $\frac{\partial \mathcal{L}}{\partial z}$ 是从后续节点传来的上游梯度，$\frac{\partial z}{\partial u_i}$ 是当前节点的局部偏导数。当节点有多个输出时（即计算图中有分支），所有下游传回的梯度需要\textbf{相加}；这本质上就是多元链式法则在 DAG 上的自然体现。
 
-\begin{mdframed}[frametitle=例子：手算一个分支计算图的反向传播]
+\begin{example}{利用计算图简化梯度传播的过程}{}
     假设我们要计算函数
     \[
         \mathcal{L} = x \cdot y + x \cdot z,
@@ -889,7 +904,7 @@ Min-Max很容易解释，但Z-score（又称“批量归一化”）并不容易
         \item 乘法节点 $v=x\cdot z$：$\frac{\partial v}{\partial x}=z=4$，传给 $x$ 的梯度（来自 $v$）为 $1\times 4=4$；$\frac{\partial v}{\partial z}=x=2$，传给 $z$ 的梯度为 $2$。
     \end{itemize}
     对 $x$ 而言，梯度从两条路径传来，需相加：$\frac{\partial \mathcal{L}}{\partial x} = 3 + 4 = 7$。这正是多元链式法则的体现：$\frac{\partial \mathcal{L}}{\partial x} = \frac{\partial \mathcal{L}}{\partial u}\frac{\partial u}{\partial x} + \frac{\partial \mathcal{L}}{\partial v}\frac{\partial v}{\partial x}$。
-\end{mdframed}
+\end{example}
 
 由此可见，无论网络结构多么复杂，只要能够构建出计算图，就可以按“先正向求出所有节点值，再反向逐节点传播梯度”的方式，机械地完成训练。
 
