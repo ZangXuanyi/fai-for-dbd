@@ -500,15 +500,32 @@ H_{\text{out}} = 2\times(2-1) - 0 + 3 = 5,\quad W_{\text{out}} = 5.
 
 \paragraph{LeNet-5}
 
-LeNet-5~\cite{1998Gradient} 诞生于1998年，是早期最著名的卷积神经网络之一，最初用于银行支票的手写数字识别。它的结构极为简洁：输入为 $32\times32$ 的灰度图像，依次经过两个卷积层（每个卷积层后接平均池化层），再经过两个全连接层，最终输出10个类别。两个卷积核的尺寸均为 $5\times5$，分别输出6个和16个特征图；池化窗口为 $2\times2$，采用平均池化并跟随一个可训练的线性缩放与偏置。全连接层将特征图展平后依次映射到120维和84维，最后通过一个径向基函数（RBF）输出层进行分类。
+LeNet-5~\cite{1998Gradient} 诞生于1998年，是早期最著名的卷积神经网络之一，最初用于银行支票的手写数字识别。它的结构极为简洁：输入为 $32\times32$ 的灰度图像，依次经过两个卷积层（每个卷积层后接平均池化层），再经过两个全连接层，最终输出10个类别。两个卷积核的尺寸均为 $5\times5$，分别输出6个和16个特征图；池化窗口为 $2\times2$，采用平均池化并跟随一个可训练的线性缩放与偏置。全连接层将特征图展平后依次映射到120维和84维，最后通过一个径向基函数（RBF）输出层进行分类\cref{fig:lenet-5}。
 
 LeNet-5 第一次系统地演示了“卷积–池化–全连接”这种层次化特征提取范式的有效性，用很少的参数量（约6万）在手写数字任务上达到了与当时最优秀的特征工程方法相当甚至更优的水平。它的成功开启了卷积神经网络的大门，证明局部连接和权值共享是处理图像的有力手段。
 
 不过，受限于当时的计算能力与数据规模，LeNet-5 无法扩展到更大、更复杂的图像问题。它缺乏现代训练技巧（如ReLU激活函数、批量归一化、Dropout），在深层网络上极易陷入梯度消失。此外，它的输出层使用了特定于任务的设计（RBF），不如后来的Softmax灵活通用。
 
+\begin{figure}
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includestandalone[width=\textwidth]{images/conv-lenet}
+        \caption{LeNet-5 网络结构}
+        \label{fig:lenet-5}
+    \end{subfigure}
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includestandalone[width=\textwidth]{images/conv-alexnet}
+        \caption{AlexNet 网络结构}
+        \label{fig:alexnet}
+    \end{subfigure}
+    \caption{}
+\end{figure}
+
 \paragraph{AlexNet}
 
-2012年，AlexNet~\cite{2012ImageNet} 以显著优势夺得 ImageNet 大规模视觉识别挑战赛（ILSVRC）的冠军，正式宣告深度学习时代的到来。AlexNet 的网络结构整体上可看作 LeNet-5 的放大与现代化版本：输入为 $224\times224\times3$ 的彩色图像，包含5个卷积层和3个全连接层，最后一个全连接层输出1000类分布。关键改动包括：首次采用 ReLU 激活函数替代 Sigmoid，极大缓解了梯度消失；引入重叠的最大池化（步长小于窗口尺寸）以增加特征多样性；在全连接层使用 Dropout 抑制过拟合；并使用本地响应归一化（Local Response Normalization）增强侧抑制效应。由于当时的 GPU 显存仍很有限，训练时还将模型拆分到两块 GPU 上并行计算，仅在特定层间交换特征图。
+2012年，AlexNet~\cite{2012ImageNet} 以显著优势夺得 ImageNet 大规模视觉识别挑战赛（ILSVRC）的冠军，正式宣告深度学习时代的到来。AlexNet 的网络结构整体上可看作 LeNet-5 的放大与现代化版本：输入为 $224\times224\times3$ 的彩色图像，包含5个卷积层和3个全连接层，最后一个全连接层输出1000类分布。关键改动包括：首次采用 ReLU 激活函数替代 Sigmoid，极大缓解了梯度消失；引入重叠的最大池化（步长小于窗口尺寸）以增加特征多样性；在全连接层使用 Dropout 抑制过拟合；并使用本地响应归一化（Local Response Normalization）增强侧抑制效应。由于当时的 GPU 显存仍很有限，训练时还将模型拆分到两块 GPU 上并行计算，仅在特定层间交换特征图。\cref{fig:alexnet} 展示了 AlexNet 的网络结构。
 
 AlexNet 凭借一系列训练技巧将深度卷积网络推向了实用化，首次证明了在百万量级的数据集上训练深层网络不仅可行，而且效果远超传统手工特征+浅层分类器的组合。它的成功直接引发了计算机视觉领域的“深度学习革命”。
 

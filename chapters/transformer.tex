@@ -1,5 +1,14 @@
 \chapter{Transformer架构}
 
+\begin{intro}
+\begin{itemize}
+    \item Transformer架构的工作流程
+    \item Transformer架构为什么有用的一些众说纷纭的解释
+    \item Transformer架构在NLP和其他领域的应用
+\end{itemize}
+本章难度较大，部分内容极为艰深。仅阅读如此科普材料是不能深入理解Transformer的。如有兴趣，建议阅读本章引用的许多原始论文。
+\end{intro}
+
 十年前，RNN的梯度消失是不可避免的深渊。这时候，Transformer架构横空出世，其论文标题 \textsc{Attention is All You Need} 也更是“不像个论文标题”，但却一语道破了Transformer的核心思想：注意力机制。Transformer架构的出现，彻底颠覆了自然语言处理领域的研究方向，并立刻被应用到其他领域，如计算机视觉、语音识别、图像生成等等，成果斐然，几乎成为了现代人工智能技术的标配。
 
 经过十年的研究，我们已经能够准确地描述Transformer架构的工作流程，但迄今为止“Transformer架构为什么这么有用”“为什么比RNN好那么多”这些问题，还\textbf{没有任何广为接受的的解释}。
@@ -148,13 +157,13 @@ Kobayashi 等人\cite{kobayashi2020attentionweightanalyzingtransformers} 对 BER
 
 通过除以 $\sqrt{d_k}$，内积的方差被归一化为 $1$，从而将 softmax 的输入控制在一个合理的数值范围内，避免了梯度消失。可以证明，在温和的假设下（$q$ 和 $k$ 的分量独立且均值为零、方差为 $1$），$\frac{q^\top k}{\sqrt{d_k}}$ 渐进服从标准正态分布 $\mathcal{N}(0, 1)$，其 softmax 输出的熵保持在中等水平，既不过于“尖锐”（导致梯度消失），也不过于“平坦”（导致信息混合）\cite{ba2016layernormalization}。
 
-\begin{mdframed}[frametitle=例子：缩放对 softmax 分布的定量影响]
+\begin{example}{缩放对 softmax 分布的定量影响}{}
 考虑一个长度为 $4$ 的序列，某次前向传播中，某个 Query 与四个 Key 的内积（未经缩放）为 $[20, 5, -3, 8]$。分别计算未缩放和缩放后的 softmax：
 
 未缩放：$\exp(20) \approx 4.85\times 10^8$，其余 $\exp$ 值约 $1.48\times 10^2$、$4.98\times 10^{-2}$、$2.98\times 10^3$。归一化后，第一个位置的注意力权重几乎为 $1$（约 $0.999$），其余位置接近 $0$。此时的梯度几乎为零，模型丧失了从其他位置学习的能力。
 
 若使用 $d_k=64$，缩放后方差归一化为 $1$，内积变为 $[2.5, 0.625, -0.375, 1.0]$。此时 softmax 输出约为 $[0.72, 0.11, 0.04, 0.13]$，分布较为平滑，梯度可以有效地流向所有位置。
-\end{mdframed}
+\end{example}
 
 \paragraph{缩放因子与训练稳定性的理论联系}
 
@@ -268,11 +277,11 @@ BPE 的巧妙之处在于它自动发现了“次词”单元（subword units）
 
 \paragraph{独热编码及其困境} 对于一个 token，最简单的表示方法是使用\textbf{独热编码}（One-hot Encoding）：将 token 在词汇表中的索引位置设为 1，其余位置设为 0。假设词汇表大小为 $V$，则每一个 token 的独热编码向量的维度为 $V$。在 $V = 50000$ 时，每个词被表示为一个长度为 50000 的向量，其中只有一个分量为 1，其余全为 0。这种表示有三个致命缺陷：
 
-\begin{itemize}
-    \item \textbf{维度灾难}：向量的维度等于词汇量，在典型的大模型场景中这意味着数万维的稀疏向量，存储和计算开销不可接受。
-    \item \textbf{语义鸿沟}：任意两个不同 token 的独热向量之间的欧氏距离都是 $\sqrt{2}$，内积都是 0。“猫”和“狗”之间、“猫”和“电脑”之间在数学上毫无区别。模型无法从输入表示中感知到任何词与词之间的语义亲和性。
-    \item \textbf{泛化缺失}：模型在训练中学习了“猫喜欢喝牛奶”，但对“狗喜欢喝牛奶”无从得知任何线索，因为“猫”和“狗”在输入空间中毫无关联。
-\end{itemize}
+\begin{description}
+    \item[维度灾难] 向量的维度等于词汇量，在典型的大模型场景中这意味着数万维的稀疏向量，存储和计算开销不可接受。
+    \item[语义鸿沟] 任意两个不同 token 的独热向量之间的欧氏距离都是 $\sqrt{2}$，内积都是 0。“猫”和“狗”之间、“猫”和“电脑”之间在数学上毫无区别。模型无法从输入表示中感知到任何词与词之间的语义亲和性。
+    \item[泛化缺失] 模型在训练中学习了“猫喜欢喝牛奶”，但对“狗喜欢喝牛奶”无从得知任何线索，因为“猫”和“狗”在输入空间中毫无关联。
+\end{description}
 
 \paragraph{分布式表示与词嵌入的思想} 解决上述困境的思路是\textbf{分布式表示}（distributed representation）：不应让每一个 token 占据一个正交的坐标轴，而应让它们“共享”一个低维连续空间的各个维度，每个 token 在这个空间中的位置编码了它的语义信息。在这一框架下，“猫”和“狗”的向量应当接近（因为它们同属宠物，语义相似），而与“电脑”的向量应当较远。更令人惊喜的是，这种向量还应当满足\textbf{语义加减}：例如，我们希望 $v_{\text{king}} - v_{\text{man}} + v_{\text{woman}} \approx v_{\text{queen}}$，即向量空间中能够编码“性别”这一语义维度，沿着这一方向移动可以改变词的性别属性而保持其“皇室”语义不变\cite{mikolov2013efficientestimationwordrepresentations,mikolov2013distributedrepresentationswordsphrases}。
 
